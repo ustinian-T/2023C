@@ -1,0 +1,10 @@
+﻿level,parameter,value,threshold,edge_count,jaccard_vs_base
+category,alpha_factor,0.8,0.01724402101,2,1
+category,alpha_factor,1,0.02155502626,2,1
+category,alpha_factor,1.2,0.02586603151,2,1
+category,mic_null_quantile,0.975,0.5405472153,5,0.4
+category,mic_null_quantile,0.99,0.5899398462,2,1
+category,mic_null_quantile,0.995,0.611117707,2,1
+category,bootstrap_stability_cutoff,0.6,0.6,2,1
+category,bootstrap_stability_cutoff,0.7,0.7,2,1
+category,bootstrap_stability_cutoff,0.8,0.8,1,0.5

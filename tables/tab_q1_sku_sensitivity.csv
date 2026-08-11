@@ -1,0 +1,10 @@
+﻿level,parameter,value,threshold,edge_count,jaccard_vs_base
+sku,alpha_factor,0.8,0.0909535833,10,1
+sku,alpha_factor,1,0.1136919791,10,1
+sku,alpha_factor,1.2,0.136430375,10,1
+sku,mic_null_quantile,0.975,0.6513082336,15,0.6666666667
+sku,mic_null_quantile,0.99,0.707111025,10,1
+sku,mic_null_quantile,0.995,0.7726638179,3,0.3
+sku,bootstrap_stability_cutoff,0.6,0.6,10,1
+sku,bootstrap_stability_cutoff,0.7,0.7,10,1
+sku,bootstrap_stability_cutoff,0.8,0.8,8,0.8

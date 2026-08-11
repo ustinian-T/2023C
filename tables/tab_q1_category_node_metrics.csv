@@ -1,0 +1,7 @@
+﻿item_code,item_name,category_name,degree,weighted_degree,betweenness,community_id,core_rank,is_core_node
+花菜类,花菜类,花菜类,2,0.3872724201,0.1,1,1,True
+辣椒类,辣椒类,辣椒类,1,0.3310812268,0,1,2,True
+食用菌,食用菌,食用菌,1,0.05619119328,0,1,3,True
+水生根茎类,水生根茎类,水生根茎类,0,0,0,2,4,True
+花叶类,花叶类,花叶类,0,0,0,3,5,True
+茄类,茄类,茄类,0,0,0,4,6,True

@@ -1,0 +1,9 @@
+{
+  "daily_sku_rows": 55982,
+  "daily_category_rows": 6545,
+  "zero_sales_cost_pairs": 9383,
+  "wholesale_low_le_0_1": 192,
+  "wholesale_iqr_flags": 2020,
+  "daily_qty_iqr_flags": 2416,
+  "daily_price_iqr_flags": 1766
+}

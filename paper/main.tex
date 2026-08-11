@@ -1,0 +1,178 @@
+\documentclass[12pt,a4paper]{ctexart}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,booktabs,array,longtable,graphicx,xcolor,hyperref}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.25em}
+\newcommand{\E}{\mathrm{E}}
+
+\title{问题一：基于多季节 STL、MIC 与 Graphical Lasso 的蔬菜销量关联网络}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+针对蔬菜品类与单品销量分布及相互关系问题，本文建立“多季节 STL 去时间结构--近似最大信息系数筛选--Graphical Lasso 条件关联--移动块 Bootstrap 稳定性”的四层模型。首先以零销量概率与正销量条件分布构造两部销量分布；其次对日销量作对数变换，并剔除星期、年度季节和长期趋势；再利用保留自相关的循环移位零分布确定 MIC 阈值，最后用 EBIC 选择稀疏精度矩阵的正则强度。251 个单品中筛得 47 个长期活跃单品，在 587 天公共窗口上得到 18 条 MIC 候选边，经条件关联和稳定性检验后保留 10 条边，其中正边 6 条、负边 4 条。六品类中 4 类正销量服从 Gamma 分布、2 类服从 Lognormal 分布；品类层最终保留 2 条稳定正边。正负边分别解释为潜在互补/同步与潜在替代，不作因果推断。
+
+\noindent\textbf{关键词：} 多季节 STL；最大信息系数；Graphical Lasso；移动块 Bootstrap；蔬菜销量
+\end{abstract}
+
+\section{问题分析}
+
+原始销量的相关性同时混合了三类信息：共同的星期节奏、年度供给季节与长期经营趋势，以及商品之间真正的短期共变。若直接计算相关矩阵，共同时间结构会制造大量难以解释的伪关联；若只用线性相关，又会遗漏非线性关系；若逐对分析 251 个单品，则会产生数万条边。因此本文先消除时间结构，再用 MIC 发现非线性候选关系，最后用稀疏精度矩阵识别控制其他商品后的直接条件关联。
+
+单品销量含有大量零值，故分布分析采用两部模型；同时，低频单品会使协方差估计不稳定，必须在进入网络前设置透明的活动度门槛。该动线既回答“分布规律”，又回答“相互关系”，并为后续单品组合模型提供候选关系而不越过因果边界。
+
+\section{数据、符号与假设}
+
+直接读取处理后的日单品与日品类数据。数据覆盖 2020 年 7 月 1 日至 2023 年 6 月 30 日，日--单品和日--品类键均无重复，销量无负值。记单品 $i$ 在日期 $t$ 的毛销量为 $Y_{it}$（kg），品类 $c$ 的销量为
+\begin{equation}
+Y_{ct}=\sum_{i\in c}Y_{it}.
+\end{equation}
+
+作如下假设：同一单品在首末记录之间无记录的日期记为零销量；预处理表中销量单位已统一为 kg；去除公共时间结构后的残差可用于分析短期共变；Graphical Lasso 的边表示同期条件关联而非因果效应。
+
+为保证年度季节分解与协方差估计稳定，单品须同时满足：跨度不少于 730 天、正销售日不少于 180 天、记录覆盖率不少于 35\%、累计销量不少于 200 kg。由 251 个单品筛得 47 个，公共分析窗口为 2021 年 1 月 30 日至 2022 年 9 月 8 日，共 587 天。
+
+\section{模型建立}
+
+\subsection{两部销量分布}
+
+对任一销量序列先估计零销量概率
+\begin{equation}
+\widehat p_0=\frac{1}{n}\sum_{t=1}^{n}\mathbf 1(Y_t=0).
+\end{equation}
+在 $Y_t>0$ 的样本上分别以极大似然拟合 Normal、Lognormal、Gamma 与 Weibull。候选分布 $M_k$ 的准则为
+\begin{equation}
+\mathrm{AIC}_k=2K_k-2\log L_k,
+\end{equation}
+取 AIC 最小者，并用 Kolmogorov--Smirnov 检验评价绝对拟合质量；若 5\% 水平下仍被拒绝，则回退到核密度估计。
+
+\subsection{多季节 STL 去趋势}
+
+对右偏销量作
+\begin{equation}
+X_{it}=\log(1+Y_{it}),
+\end{equation}
+并用鲁棒多季节 STL 分解为
+\begin{equation}
+X_{it}=T_{it}+S^{(7)}_{it}+S^{(365)}_{it}+R_{it},
+\end{equation}
+其中 $T_{it}$ 为长期趋势，$S^{(7)}_{it}$ 与 $S^{(365)}_{it}$ 分别为 7 日和 365 日季节分量，最终关联分析只使用残差 $R_{it}$。STL 以 LOESS 估计季节与趋势项\cite{cleveland1990}。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{../figures/fig_q1_stl_decomposition.pdf}
+\caption{代表性单品的多季节 STL 分解。残差层剔除了共同星期、年度季节和长期趋势。}
+\end{figure}
+
+\subsection{近似 MIC 非线性筛选}
+
+对残差作平均秩变换，在满足 $ab\leq \lfloor n^{0.6}\rfloor$ 的等频 $a\times b$ 网格上计算互信息，并取
+\begin{equation}
+\widehat{\mathrm{MIC}}_{ij}=
+\max_{a,b}\frac{I_{a,b}(R_i;R_j)}{\log\min(a,b)}.
+\end{equation}
+该量用于借鉴最大信息系数的“广泛关系公平性”思想\cite{reshef2011}，但本文实现明确记作近似 MIC，不冒充 MINE 软件的 MICe。阈值由循环移位替代序列的零分布 99\% 分位确定：循环移位保留各自的边际分布和自相关，同时破坏同期对齐。
+
+\subsection{Graphical Lasso 条件关联}
+
+残差经秩高斯变换和标准化后组成矩阵 $Z$，样本协方差为 $S$。Graphical Lasso 估计精度矩阵\cite{friedman2008}：
+\begin{equation}
+\widehat\Theta=\arg\min_{\Theta\succ0}
+\left\{\operatorname{tr}(S\Theta)-\log|\Theta|+
+\lambda\|\Theta\|_{1,\mathrm{off}}\right\}.
+\end{equation}
+正则强度由扩展贝叶斯信息准则选取，条件相关为
+\begin{equation}
+\rho_{ij}^{\mathrm{partial}}=-\frac{\widehat\Theta_{ij}}
+{\sqrt{\widehat\Theta_{ii}\widehat\Theta_{jj}}}.
+\end{equation}
+
+最终边须同时满足：MIC 超过零分布阈值、精度矩阵对应元素非零、14 日移动块 Bootstrap 中同号出现率不低于 70\%。正值称为潜在互补/同步，负值称为潜在替代。
+
+\section{结果与解释}
+
+\subsection{销量分布}
+
+六品类的参数分布均通过 KS 检验。表\ref{tab:dist} 表明，水生根茎类、花叶类、花菜类和茄类更符合 Gamma 分布，辣椒类与食用菌更符合 Lognormal 分布。47 个高活跃单品中 24 个接受参数分布，23 个需回退 KDE，说明单品层的分布异质性明显高于品类层。
+
+\begin{table}[htbp]
+\centering
+\caption{六品类正销量条件分布}
+\label{tab:dist}
+\begin{tabular}{lrrrr}
+\toprule
+品类 & 零销量比例/\% & 均值/kg & 最优分布 & KS $p$ 值\\
+\midrule
+水生根茎类 & 0.91 & 37.08 & Gamma & 0.49\\
+花叶类 & 0.91 & 181.42 & Gamma & 0.27\\
+花菜类 & 1.00 & 38.16 & Gamma & 0.33\\
+茄类 & 4.11 & 20.50 & Gamma & 0.55\\
+辣椒类 & 0.91 & 83.69 & Lognormal & 0.51\\
+食用菌 & 0.91 & 69.53 & Lognormal & 0.52\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{../figures/fig_q1_category_distributions.pdf}
+\caption{六品类的零质量与正销量条件分布。}
+\end{figure}
+
+\subsection{单品稀疏网络}
+
+单品层 MIC 99\% 阈值为 0.71，共得到 18 条候选边。EBIC 选择的正则强度为 0.11，对应精度矩阵最小特征值为 0.16，满足正定要求。100 次移动块 Bootstrap 均成功，最终得到 10 条稳定边，其中正边 6 条、负边 4 条；47 个节点中 12 个进入连通网络。
+
+绝对条件相关最大的正边为“姬菇(1)--海鲜菇(1)”（0.31，稳定率 100\%）。主要负边为“海鲜菇(1)--长线茄”（-0.17）、“枝江红菜苔--灯笼椒(1)”（-0.12）和“姬菇(1)--长线茄”（-0.12），三者稳定率均为 100\%。这些结果说明在控制其他高活跃单品后，少数商品仍存在稳定的短期同步或反向变化，但不能据此断言消费者层面的因果替代。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.88\textwidth]{../figures/fig_q1_mic_graphical_lasso.pdf}
+\caption{MIC 候选关系与 Graphical Lasso 条件关联的双重筛选。}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{../figures/fig_q1_sku_network.pdf}
+\caption{高活跃单品的稳定稀疏条件关联网络。孤立节点未绘制。}
+\end{figure}
+
+\subsection{品类层关系}
+
+品类层最终保留两条稳定正边：“花菜类--辣椒类”的条件相关为 0.33、稳定率 100\%；“花菜类--食用菌”的条件相关为 0.06、稳定率 75.50\%。后一条边较弱且靠近稳定性门槛，只作辅助关系，不应过度解释。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.82\textwidth]{../figures/fig_q1_category_partial_matrix.pdf}
+\caption{品类层条件相关矩阵。星号表示同时通过 MIC 与 Bootstrap 稳定性筛选。}
+\end{figure}
+
+\section{模型检验}
+
+以与最终网络相同边数截取原始销量 Spearman 强边，和最终稳定边的 Jaccard 为 0，说明去除共同时间结构后，直接关联发生实质变化。Graphical Lasso 正则强度乘以 0.8、1.0、1.2 时，最终候选交集保持 10 条不变；Bootstrap 门槛由 70\% 提高到 80\% 时仍保留 8 条边。MIC 阈值是最敏感的参数：零分布分位从 99.0\% 调至 97.5\% 时边数增至 15，调至 99.5\% 时降至 3。因此本文只将 99\% 阈值下的 10 条边视为主结果，并公开敏感性边界。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{../figures/fig_q1_robustness.pdf}
+\caption{EBIC 正则路径与时间块 Bootstrap 稳定性证据。}
+\end{figure}
+
+\section{模型评价与局限}
+
+模型的优点在于：先去时间结构再估计网络，降低伪相关；MIC 与条件相关分别覆盖非线性发现和直接关系压缩；EBIC、循环移位零分布与移动块 Bootstrap 构成完整验证链；稀疏网络便于解释并可传递给后续单品组合模型。
+
+局限性包括：无销售记录可能混合零需求与未上架/缺货；近似 MIC 不等同于严格 MICe；Graphical Lasso 无法排除价格、促销、天气、客流和陈列等未观测混杂；活动度筛选使结论不覆盖短生命周期单品。故本问的最终结论是稳定的潜在关联，而非需求弹性或因果替代系数。
+
+\begin{thebibliography}{9}
+\bibitem{cleveland1990} Cleveland R B, Cleveland W S, McRae J E, Terpenning I. STL: A seasonal-trend decomposition procedure based on LOESS. \emph{Journal of Official Statistics}, 1990, 6: 3--73.
+\bibitem{reshef2011} Reshef D N, Reshef Y A, Finucane H K, et al. Detecting novel associations in large data sets. \emph{Science}, 2011, 334: 1518--1524. DOI: 10.1126/science.1205438.
+\bibitem{friedman2008} Friedman J, Hastie T, Tibshirani R. Sparse inverse covariance estimation with the graphical lasso. \emph{Biostatistics}, 2008, 9(3): 432--441. DOI: 10.1093/biostatistics/kxm045.
+\end{thebibliography}
+
+\end{document}

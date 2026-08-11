@@ -1,0 +1,5 @@
+﻿category_pair,edge_count,positive_edges,negative_edges,mean_abs_partial_corr,mean_stability
+水生根茎类--花叶类,5,4,1,0.08204959773,0.934
+茄类--食用菌,2,0,2,0.1451564026,1
+花叶类--辣椒类,2,1,1,0.08769479642,0.86
+食用菌--食用菌,1,1,0,0.312476114,1

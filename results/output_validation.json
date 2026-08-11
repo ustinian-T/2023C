@@ -1,0 +1,217 @@
+{
+  "status": "PASS",
+  "check_count": 38,
+  "checks": [
+    {
+      "check": "all SKU count agrees",
+      "passed": true
+    },
+    {
+      "check": "selected SKU count agrees",
+      "passed": true
+    },
+    {
+      "check": "final SKU edge count agrees",
+      "passed": true
+    },
+    {
+      "check": "positive edge count agrees",
+      "passed": true
+    },
+    {
+      "check": "negative edge count agrees",
+      "passed": true
+    },
+    {
+      "check": "edge table contains only final edges",
+      "passed": true
+    },
+    {
+      "check": "all edges pass MIC threshold",
+      "passed": true
+    },
+    {
+      "check": "all edges pass bootstrap threshold",
+      "passed": true
+    },
+    {
+      "check": "MIC candidate count agrees",
+      "passed": true
+    },
+    {
+      "check": "connected SKU node count is 12",
+      "passed": true
+    },
+    {
+      "check": "category edge count agrees",
+      "passed": true
+    },
+    {
+      "check": "SKU precision matrix is positive definite",
+      "passed": true
+    },
+    {
+      "check": "category precision matrix is positive definite",
+      "passed": true
+    },
+    {
+      "check": "alpha +/-20% keeps 10 candidate intersections",
+      "passed": true
+    },
+    {
+      "check": "alpha +/-20% Jaccard equals 1",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_stl_decomposition PNG exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_stl_decomposition PDF exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_stl_decomposition raster dimensions are publication grade",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_category_distributions PNG exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_category_distributions PDF exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_category_distributions raster dimensions are publication grade",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_mic_graphical_lasso PNG exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_mic_graphical_lasso PDF exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_mic_graphical_lasso raster dimensions are publication grade",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_sku_network PNG exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_sku_network PDF exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_sku_network raster dimensions are publication grade",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_category_partial_matrix PNG exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_category_partial_matrix PDF exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_category_partial_matrix raster dimensions are publication grade",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_robustness PNG exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_robustness PDF exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_robustness raster dimensions are publication grade",
+      "passed": true
+    },
+    {
+      "check": "result workbook exists",
+      "passed": true
+    },
+    {
+      "check": "result workbook is a valid XLSX zip container",
+      "passed": true
+    },
+    {
+      "check": "result workbook contains workbook.xml",
+      "passed": true
+    },
+    {
+      "check": "paper/main.tex exists and is substantive",
+      "passed": true
+    },
+    {
+      "check": "paper has no placeholders",
+      "passed": true
+    }
+  ],
+  "image_details": [
+    {
+      "base": "fig_q1_stl_decomposition",
+      "width": 7743,
+      "height": 3985,
+      "dpi": [
+        599.9988,
+        599.9988
+      ]
+    },
+    {
+      "base": "fig_q1_category_distributions",
+      "width": 7609,
+      "height": 3999,
+      "dpi": [
+        599.9988,
+        599.9988
+      ]
+    },
+    {
+      "base": "fig_q1_mic_graphical_lasso",
+      "width": 6517,
+      "height": 3889,
+      "dpi": [
+        599.9988,
+        599.9988
+      ]
+    },
+    {
+      "base": "fig_q1_sku_network",
+      "width": 6154,
+      "height": 3186,
+      "dpi": [
+        599.9988,
+        599.9988
+      ]
+    },
+    {
+      "base": "fig_q1_category_partial_matrix",
+      "width": 4942,
+      "height": 3953,
+      "dpi": [
+        599.9988,
+        599.9988
+      ]
+    },
+    {
+      "base": "fig_q1_robustness",
+      "width": 7526,
+      "height": 3998,
+      "dpi": [
+        599.9988,
+        599.9988
+      ]
+    }
+  ],
+  "environment_limitations": [
+    "No xelatex/lualatex/tectonic executable was available; paper/main.tex was not compiled."
+  ]
+}

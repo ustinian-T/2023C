@@ -1,0 +1,3 @@
+﻿source_code,target_code,spearman_raw,spearman_residual,mic_approx,mic_candidate,partial_corr,graphical_lasso_edge,bootstrap_active_rate,bootstrap_same_sign_rate,final_stable_edge,source_item_code,source_item_name,source_category_name,target_item_code,target_item_name,target_category_name,association_type
+花菜类,辣椒类,0.4451744599,0.5152984702,0.6625462868,True,0.3310812268,True,1,1,True,花菜类,花菜类,花菜类,辣椒类,辣椒类,辣椒类,潜在互补/同步
+花菜类,食用菌,0.4770072798,0.2917997323,0.6184948264,True,0.05619119328,True,0.81,0.755,True,花菜类,花菜类,花菜类,食用菌,食用菌,食用菌,潜在互补/同步

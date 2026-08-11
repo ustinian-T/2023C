@@ -1,0 +1,152 @@
+{
+  "model": "MSTL(7,365) -> approximate MIC circular-shift null screen -> EBIC Graphical Lasso -> moving-block bootstrap",
+  "input_directory": "蔬菜数据预处理结果包",
+  "config": {
+    "random_seed": 20230907,
+    "min_span_days": 730,
+    "min_sales_days": 180,
+    "min_coverage": 0.35,
+    "min_total_qty": 200.0,
+    "weekly_period": 7,
+    "annual_period": 365,
+    "mic_alpha": 0.6,
+    "mic_max_bins": 12,
+    "mic_null_draws_sku": 2000,
+    "mic_null_draws_category": 1500,
+    "mic_null_quantile": 0.99,
+    "ebic_gamma": 0.5,
+    "alpha_grid_size": 30,
+    "alpha_min_ratio": 0.02,
+    "alpha_max_ratio": 0.95,
+    "bootstrap_reps_sku": 100,
+    "bootstrap_reps_category": 200,
+    "bootstrap_block_length": 14,
+    "bootstrap_stability_cutoff": 0.7,
+    "edge_zero_tol": 1e-06
+  },
+  "integrity": {
+    "duplicate_sku_day_keys": 0,
+    "duplicate_category_day_keys": 0,
+    "negative_sku_qty_rows": 0,
+    "negative_category_qty_rows": 0,
+    "sku_date_min": "2020-07-01",
+    "sku_date_max": "2023-06-30",
+    "category_date_min": "2020-07-01",
+    "category_date_max": "2023-06-30"
+  },
+  "all_sku_count": 251,
+  "selected_sku_count": 47,
+  "sku_common_start": "2021-01-30",
+  "sku_common_end": "2022-09-08",
+  "distribution": {
+    "objects": 53,
+    "kde_fallback_count": 23,
+    "parametric_accepted_count": 30
+  },
+  "sku_network": {
+    "level": "sku",
+    "n_days": 587,
+    "n_nodes": 47,
+    "mic_threshold": 0.7071110249737693,
+    "selected_alpha": 0.11369197912634726,
+    "precision_min_eigenvalue": 0.1597509662851746,
+    "bootstrap_requested": 100,
+    "bootstrap_success": 100,
+    "graphical_lasso_edges": 343,
+    "mic_candidates": 18,
+    "final_stable_edges": 10,
+    "positive_final_edges": 6,
+    "negative_final_edges": 4,
+    "community_count": 38,
+    "raw_final_edge_jaccard": 0.0
+  },
+  "category_network": {
+    "level": "category",
+    "n_days": 1095,
+    "n_nodes": 6,
+    "mic_threshold": 0.5899398461667434,
+    "selected_alpha": 0.02155502625889621,
+    "precision_min_eigenvalue": 0.4285427944575782,
+    "bootstrap_requested": 200,
+    "bootstrap_success": 200,
+    "graphical_lasso_edges": 13,
+    "mic_candidates": 2,
+    "final_stable_edges": 2,
+    "positive_final_edges": 2,
+    "negative_final_edges": 0,
+    "community_count": 4,
+    "raw_final_edge_jaccard": 0.0
+  },
+  "top_sku_core_nodes": [
+    {
+      "item_code": "102900005119944",
+      "item_name": "海鲜菇(1)",
+      "category_name": "食用菌",
+      "degree": 2,
+      "weighted_degree": 0.48707641146888303
+    },
+    {
+      "item_code": "102900005116912",
+      "item_name": "姬菇(1)",
+      "category_name": "食用菌",
+      "degree": 2,
+      "weighted_degree": 0.4281886217266904
+    },
+    {
+      "item_code": "102900011021842",
+      "item_name": "洪湖莲藕(粉藕)",
+      "category_name": "水生根茎类",
+      "degree": 5,
+      "weighted_degree": 0.4102479886253678
+    },
+    {
+      "item_code": "102900011022764",
+      "item_name": "长线茄",
+      "category_name": "茄类",
+      "degree": 2,
+      "weighted_degree": 0.2903128052059362
+    },
+    {
+      "item_code": "102900005122654",
+      "item_name": "枝江红菜苔",
+      "category_name": "花叶类",
+      "degree": 2,
+      "weighted_degree": 0.17538959284491512
+    },
+    {
+      "item_code": "102900005123880",
+      "item_name": "灯笼椒(1)",
+      "category_name": "辣椒类",
+      "degree": 1,
+      "weighted_degree": 0.11979484726358004
+    },
+    {
+      "item_code": "102900005116790",
+      "item_name": "黄心菜(1)",
+      "category_name": "花叶类",
+      "degree": 1,
+      "weighted_degree": 0.11337015371819661
+    },
+    {
+      "item_code": "102900005115960",
+      "item_name": "大白菜",
+      "category_name": "花叶类",
+      "degree": 1,
+      "weighted_degree": 0.084794383196273
+    },
+    {
+      "item_code": "102900011008164",
+      "item_name": "奶白菜",
+      "category_name": "花叶类",
+      "degree": 1,
+      "weighted_degree": 0.07945463403541807
+    },
+    {
+      "item_code": "102900005118831",
+      "item_name": "娃娃菜",
+      "category_name": "花叶类",
+      "degree": 1,
+      "weighted_degree": 0.07197032362662374
+    }
+  ]
+}

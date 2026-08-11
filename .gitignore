@@ -1,0 +1,23 @@
+# Local packaging and temporary files
+2023CQ1.zip
+tmp/
+
+# Unrelated source materials in the shared workspace
+C题/
+C题.rar
+B题.rar
+附件2.xlsx
+蔬菜数据预处理结果包.zip
+format2023.doc
+~$*.xlsx
+
+# Python and editor artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.idea/
+.vscode/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
