@@ -12,20 +12,33 @@ figureDir = fullfile(rootDir, 'figures');
 if ~exist(figureDir, 'dir'), mkdir(figureDir); end
 
 fontName = 'Microsoft YaHei';
+
+% Unified SCI palette supplied by the user (RGB values are exact).
+% Light tones encode context/weak evidence; blue-green and blue families
+% encode positive and negative relations respectively. Marker shape and line
+% style remain redundant encodings for grayscale and color-vision robustness.
+paleMint = [221 242 240] / 255;  % #DDF2F0
+iceMint  = [214 246 241] / 255;  % #D6F6F1
+mint     = [166 235 221] / 255;  % #A6EBDD
+teal     = [136 201 208] / 255;  % #88C9D0
+lavender = [146 158 210] / 255;  % #929ED2
+blue     = [ 94 140 190] / 255;  % #5E8CBE
+navy     = [ 62  86 130] / 255;  % #3E5682
+dark     = [ 15  22  51] / 255;  % #0F1633
+
 set(groot, 'defaultAxesFontName', fontName, ...
     'defaultTextFontName', fontName, ...
     'defaultAxesFontSize', 14, ...
     'defaultAxesLineWidth', 1.1, ...
     'defaultLineLineWidth', 1.8, ...
     'defaultFigureColor', 'w', ...
+    'defaultAxesColor', 'w', ...
+    'defaultAxesXColor', dark, ...
+    'defaultAxesYColor', dark, ...
+    'defaultAxesGridColor', paleMint, ...
+    'defaultAxesGridAlpha', 0.75, ...
+    'defaultTextColor', dark, ...
     'defaultAxesToolbarVisible', 'off');
-
-blue = [0.20 0.47 0.72];
-orange = [0.88 0.45 0.15];
-green = [0.24 0.62 0.43];
-red = [0.80 0.25 0.23];
-gray = [0.68 0.70 0.72];
-dark = [0.15 0.18 0.22];
 
 %% Figure 1: representative MSTL decomposition
 T = readtable(fullfile(tableDir, 'tab_q1_stl_example.csv'), ...
@@ -44,22 +57,22 @@ legend(ax, '原始销量', 'Location', 'northeast', 'FontSize', 13, 'Box', 'off'
 grid(ax, 'on');
 
 ax = nexttile(tl);
-plot(ax, T.date, T.log_sales, 'Color', gray, 'LineWidth', 1.1); hold(ax, 'on');
-plot(ax, T.date, T.trend, 'Color', orange, 'LineWidth', 2.2);
+plot(ax, T.date, T.log_sales, 'Color', lavender, 'LineWidth', 1.1); hold(ax, 'on');
+plot(ax, T.date, T.trend, 'Color', navy, 'LineWidth', 2.2);
 ylabel(ax, 'log(1+销量)', 'FontSize', 15);
 legend(ax, {'变换后销量', '长期趋势'}, 'Location', 'northeast', 'FontSize', 13, 'Box', 'off');
 grid(ax, 'on');
 
 ax = nexttile(tl);
 plot(ax, T.date, T.seasonal_7, 'Color', blue); hold(ax, 'on');
-plot(ax, T.date, T.seasonal_365, 'Color', green);
+plot(ax, T.date, T.seasonal_365, 'Color', teal);
 ylabel(ax, '季节分量', 'FontSize', 15);
 legend(ax, {'7 日周期', '365 日周期'}, 'Location', 'northeast', 'FontSize', 13, 'Box', 'off');
 grid(ax, 'on');
 
 ax = nexttile(tl);
 plot(ax, T.date, T.residual, 'Color', dark, 'LineWidth', 1.2); hold(ax, 'on');
-yline(ax, 0, '--', 'Color', gray, 'LineWidth', 1.1);
+yline(ax, 0, '--', 'Color', teal, 'LineWidth', 1.1);
 xlabel(ax, '日期', 'FontSize', 15);
 ylabel(ax, '残差销量', 'FontSize', 15);
 legend(ax, {'最终残差', '零基线'}, 'Location', 'northeast', 'FontSize', 13, 'Box', 'off');
@@ -87,15 +100,15 @@ for k = 1:numel(categoryNames)
     ax = nexttile(tl);
     x = C.(name);
     x = x(isfinite(x) & x > 0);
-    histogram(ax, x, 24, 'Normalization', 'pdf', 'FaceColor', blue, ...
-        'FaceAlpha', 0.55, 'EdgeColor', 'none'); hold(ax, 'on');
+    histogram(ax, x, 24, 'Normalization', 'pdf', 'FaceColor', teal, ...
+        'FaceAlpha', 0.65, 'EdgeColor', iceMint); hold(ax, 'on');
     srow = D(D.level == "category" & D.item_name == name, :);
     best = srow.best_distribution(1);
     frow = F(F.level == "category" & F.item_name == name & F.distribution == best, :);
     xmax = prctile(x, 99.5);
     xx = linspace(max(0, min(x)), xmax, 400);
     yy = distributionPdf(xx, best, frow.parameter_1(1), frow.parameter_2(1));
-    plot(ax, xx, yy, 'Color', orange, 'LineWidth', 2.4);
+    plot(ax, xx, yy, 'Color', navy, 'LineWidth', 2.4);
     xlim(ax, [0 xmax]);
     xlabel(ax, '正销量/kg', 'FontSize', 14);
     ylabel(ax, '概率密度', 'FontSize', 14);
@@ -124,15 +137,17 @@ micThreshold = min(P.mic_approx(candidateMask));
 
 fig = figure('Position', [120 80 1250 900]);
 ax = axes(fig); hold(ax, 'on');
-scatter(ax, P.mic_approx, P.partial_corr, 20, gray, 'filled', ...
+scatter(ax, P.mic_approx, P.partial_corr, 20, paleMint, 'filled', ...
     'MarkerFaceAlpha', 0.42, 'DisplayName', '全部商品对');
 scatter(ax, P.mic_approx(candidateMask & ~finalMask), ...
-    P.partial_corr(candidateMask & ~finalMask), 44, orange, 'o', ...
+    P.partial_corr(candidateMask & ~finalMask), 44, lavender, 'o', ...
     'LineWidth', 1.2, 'DisplayName', '仅通过 MIC');
 scatter(ax, P.mic_approx(positiveMask), P.partial_corr(positiveMask), ...
-    85, red, '^', 'filled', 'DisplayName', '稳定正边');
+    85, mint, '^', 'filled', 'MarkerEdgeColor', navy, ...
+    'DisplayName', '稳定正边');
 scatter(ax, P.mic_approx(negativeMask), P.partial_corr(negativeMask), ...
-    85, blue, 'v', 'filled', 'DisplayName', '稳定负边');
+    85, blue, 'v', 'filled', 'MarkerEdgeColor', dark, ...
+    'DisplayName', '稳定负边');
 xline(ax, micThreshold, '--', 'MIC 99% 阈值', 'Color', dark, ...
     'LabelOrientation', 'horizontal', 'LabelVerticalAlignment', 'bottom', ...
     'FontSize', 13, 'LineWidth', 1.4, 'HandleVisibility', 'off');
@@ -159,8 +174,7 @@ nodeCodes = connected.item_code;
 G = graph([], [], [], cellstr(string(nodeCodes)));
 G = addedge(G, cellstr(string(E.source_code)), cellstr(string(E.target_code)), abs(E.partial_corr));
 [categoryList, ~, categoryIndex] = unique(connected.category_name, 'stable');
-palette = [0.20 0.47 0.72; 0.88 0.45 0.15; 0.24 0.62 0.43; ...
-           0.73 0.34 0.64; 0.52 0.48 0.72; 0.55 0.42 0.31];
+palette = [iceMint; mint; teal; lavender; blue; navy];
 palette = palette(1:numel(categoryList), :);
 
 fig = figure('Position', [90 50 1450 980]);
@@ -169,15 +183,22 @@ gp = plot(ax, G, 'Layout', 'force', 'Iterations', 120, ...
     'NodeCData', categoryIndex, 'MarkerSize', 9, ...
     'NodeLabel', connected.item_name, 'NodeFontSize', 12, ...
     'NodeFontName', fontName);
+xSpan = max(gp.XData) - min(gp.XData);
+ySpan = max(gp.YData) - min(gp.YData);
 gp.LineWidth = 1.5;
-gp.EdgeColor = gray;
+gp.EdgeColor = paleMint;
 edgeWidths = 1.2 + 4.5*rescale(abs(E.partial_corr));
 for r = 1:height(E)
-    edgeColor = blue;
-    if E.partial_corr(r) > 0, edgeColor = red; end
+    edgeColor = dark;
+    if E.partial_corr(r) > 0, edgeColor = teal; end
     highlight(gp, string(E.source_code(r)), string(E.target_code(r)), ...
         'EdgeColor', edgeColor, 'LineWidth', edgeWidths(r));
 end
+% Apply layout padding after all highlight calls because GraphPlot can restore
+% automatic limits while edge styles are updated.
+ax.Position = [0.06 0.08 0.67 0.82];
+xlim(ax, [min(gp.XData)-0.28*xSpan, max(gp.XData)+0.28*xSpan]);
+ylim(ax, [min(gp.YData)-0.18*ySpan, max(gp.YData)+0.18*ySpan]);
 colormap(ax, palette);
 axis(ax, 'off');
 title(ax, '高活跃单品的稳定稀疏条件关联网络', 'FontSize', 20, 'FontWeight', 'bold');
@@ -188,16 +209,16 @@ for k = 1:numel(categoryList)
     h(k) = scatter(ax, nan, nan, 90, palette(k,:), 'filled');
     labels(k) = categoryList(k);
 end
-h(end-1) = plot(ax, nan, nan, '-', 'Color', red, 'LineWidth', 2.6);
-h(end) = plot(ax, nan, nan, '-', 'Color', blue, 'LineWidth', 2.6);
+h(end-1) = plot(ax, nan, nan, '-', 'Color', teal, 'LineWidth', 2.6);
+h(end) = plot(ax, nan, nan, '-', 'Color', dark, 'LineWidth', 2.6);
 labels(end-1:end) = ["潜在互补/同步", "潜在替代"];
 lg = legend(ax, h, labels, 'Location', 'northeast', 'FontSize', 11, 'Box', 'on');
-lg.Position = [0.78 0.55 0.19 0.25];
-annotation(fig, 'textbox', [0.74 0.82 0.23 0.10], ...
+lg.Position = [0.76 0.43 0.21 0.31];
+annotation(fig, 'textbox', [0.73 0.80 0.25 0.12], ...
     'String', sprintf('47 个入选单品\n%d 个连通节点，%d 条稳定边\n孤立节点未绘制', ...
     height(connected), height(E)), 'HorizontalAlignment', 'right', ...
     'VerticalAlignment', 'top', 'FontName', fontName, 'FontSize', 12, ...
-    'BackgroundColor', 'w', 'EdgeColor', [0.8 0.8 0.8], 'Margin', 6);
+    'BackgroundColor', 'w', 'EdgeColor', paleMint, 'Margin', 6);
 exportAcademic(fig, figureDir, 'fig_q1_sku_network');
 
 %% Figure 5: category conditional-correlation matrix
@@ -205,7 +226,7 @@ CP = readtable(fullfile(tableDir, 'tab_q1_category_pair_measures.csv'), ...
     'TextType', 'string', 'VariableNamingRule', 'preserve', 'Encoding', 'UTF-8');
 catNames = unique([CP.source_code; CP.target_code], 'stable');
 M = eye(numel(catNames));
-stableM = false(numel(catNames));
+stableM = false(numel(catNames), numel(catNames));
 for r = 1:height(CP)
     i = find(catNames == CP.source_code(r), 1);
     j = find(catNames == CP.target_code(r), 1);
@@ -233,7 +254,7 @@ for i = 1:numel(catNames)
         else
             label = sprintf('%.2f', M(i,j));
         end
-        color = 'k'; if abs(M(i,j)) > 0.25, color = 'w'; end
+        color = dark; if M(i,j) < -0.20, color = 'w'; end
         text(ax, j, i, label, 'HorizontalAlignment', 'center', ...
             'FontSize', 13, 'FontWeight', 'bold', 'Color', color);
     end
@@ -257,7 +278,7 @@ tl = tiledlayout(fig, 1, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 ax = nexttile(tl); hold(ax, 'on');
 semilogx(ax, A.alpha, A.ebic, '-o', 'Color', blue, 'MarkerSize', 5, ...
     'MarkerFaceColor', blue, 'DisplayName', 'EBIC');
-scatter(ax, A.alpha(bestIdx), A.ebic(bestIdx), 110, red, 'filled', ...
+scatter(ax, A.alpha(bestIdx), A.ebic(bestIdx), 110, dark, 'filled', ...
     'DisplayName', '最优正则强度');
 xlabel(ax, 'Graphical Lasso 正则强度 \lambda', 'FontSize', 15);
 ylabel(ax, 'EBIC', 'FontSize', 15);
@@ -268,9 +289,9 @@ grid(ax, 'on');
 ax = nexttile(tl); hold(ax, 'on');
 stableCandidate = candidateMask & asLogical(P.graphical_lasso_edge);
 histogram(ax, P.bootstrap_same_sign_rate(stableCandidate), 0:0.05:1, ...
-    'FaceColor', green, 'FaceAlpha', 0.7, 'EdgeColor', 'w', ...
+    'FaceColor', teal, 'FaceAlpha', 0.78, 'EdgeColor', iceMint, ...
     'DisplayName', '候选边同号稳定率');
-xline(ax, 0.70, '--', '70% 门槛', 'Color', red, 'LineWidth', 1.6, ...
+xline(ax, 0.70, '--', '70% 门槛', 'Color', dark, 'LineWidth', 1.6, ...
     'FontSize', 13, 'LabelVerticalAlignment', 'bottom', 'HandleVisibility', 'off');
 xlabel(ax, '移动块 Bootstrap 同号稳定率', 'FontSize', 15);
 ylabel(ax, '边数', 'FontSize', 15);
@@ -281,7 +302,7 @@ title(tl, '模型选择与稳健性检验', 'FontSize', 20, 'FontWeight', 'bold'
 text(ax, 0.98, 0.72, sprintf('正则强度 lambda=%.3f\nlambda 的 ±20%% 下边集合不变', A.alpha(bestIdx)), ...
     'Units', 'normalized', 'HorizontalAlignment', 'right', 'VerticalAlignment', 'top', ...
     'FontName', fontName, 'FontSize', 13, 'BackgroundColor', 'w', ...
-    'EdgeColor', [0.8 0.8 0.8], 'Margin', 6);
+    'EdgeColor', paleMint, 'Margin', 6);
 exportAcademic(fig, figureDir, 'fig_q1_robustness');
 
 fprintf('Generated six Q1 academic figures in %s\n', figureDir);
@@ -314,13 +335,13 @@ function out = asLogical(value)
 end
 
 function cmap = divergingMap(n)
-    blue = [0.19 0.43 0.67];
-    white = [0.98 0.98 0.98];
-    orange = [0.82 0.31 0.17];
+    negative = [62 86 130] / 255;   % #3E5682
+    center = [1 1 1];
+    positive = [166 235 221] / 255; % #A6EBDD
     n1 = floor(n/2);
     n2 = n - n1;
-    cmap = [linspace(blue(1),white(1),n1)' linspace(blue(2),white(2),n1)' linspace(blue(3),white(3),n1)'; ...
-            linspace(white(1),orange(1),n2)' linspace(white(2),orange(2),n2)' linspace(white(3),orange(3),n2)'];
+    cmap = [linspace(negative(1),center(1),n1)' linspace(negative(2),center(2),n1)' linspace(negative(3),center(3),n1)'; ...
+            linspace(center(1),positive(1),n2)' linspace(center(2),positive(2),n2)' linspace(center(3),positive(3),n2)'];
 end
 
 function exportAcademic(fig, figureDir, baseName)
