@@ -7,7 +7,7 @@
 | 问题 | 主题 | 状态 | 入口 |
 | --- | --- | --- | --- |
 | 问题 1 | 销量分布与品类/单品关联关系 | ✅ 已完成（重构：季节画像 + K-means 聚类 + 分层关系分析） | [questions/q1/README.md](questions/q1/README.md) |
-| 问题 2 | 品类级未来一周补货与定价 | 目录已建立，求解尚未开始 | [questions/q2/README.md](questions/q2/README.md) |
+| 问题 2 | 品类级未来一周补货与定价 | ✅ 已完成（半参数弹性 + 集成预测 + 联合场景 + 周级 CVaR 优化） | [questions/q2/README.md](questions/q2/README.md) |
 | 问题 3 | 单品级 7 月 1 日补货与定价 | 目录已建立，求解尚未开始 | [questions/q3/README.md](questions/q3/README.md) |
 | 问题 4 | 建议补充采集的数据及其作用 | 目录已建立，求解尚未开始 | [questions/q4/README.md](questions/q4/README.md) |
 
@@ -49,3 +49,15 @@ Python 完成数据读取、模型估计和表格导出；MATLAB 只读取 Pytho
 四个原始附件只在 `data/raw/` 保存一份，任何代码都不应覆盖或原地修改它们。清洗后的共享数据写入 `data/processed/`；仅属于某一问的衍生结果写入该问自己的 `outputs/`。
 
 第一问的网络边仅解释为潜在同步、互补或替代关系，不作因果推断。
+
+## 第二问复现
+
+第二问从仓库根目录执行：
+
+```powershell
+python questions\q2\code\q2_model.py
+python -m unittest discover -s questions\q2\code -p "test_q2_model.py"
+python questions\q2\code\validate_q2_outputs.py
+```
+
+主策略采用风险权重 `0.25`，优化目标中的尾部收益直接基于 600 条联合七日场景的周总利润计算，不以每日尾部收益之和替代。结果统一写入 `questions/q2/outputs/`。
