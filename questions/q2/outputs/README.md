@@ -20,5 +20,13 @@
 
 - `q2_summary.json`：论文和程序可直接读取的核心结果；
 - `q2_validation.json`：36 项输出一致性验证明细。
+- `q2_strict_review.md`：题意、模型、代码、复现性与风险的严格审查报告。
+
+## figures
+
+- `fig_q2_daily_replenishment_pricing.*`：未来一周日补货与定价策略；
+- `fig_q2_elasticity_identification.*`：价格响应估计、置信区间与回退边界；
+- `fig_q2_baseline_profit_comparison.*`：历史中位基线与主策略的同口径收益比较；
+- `fig_q2_parameter_sensitivity.*`：商誉成本与参考正则的敏感性分析。
 
 利润字段严格区分经营利润、扣除商誉成本后的服务调整利润、再扣除参考正则后的利润以及风险目标。CSV 使用 UTF-8 with BOM，便于在中文版 Excel 中直接打开。结果不应手工修改；参数或代码变化后应重新运行模型和验证脚本。

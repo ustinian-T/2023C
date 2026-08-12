@@ -48,4 +48,6 @@ python questions\q2\code\validate_q2_outputs.py
 
 完整公式见 [modeling/README.md](modeling/README.md)，结果解释见 [report/README.md](report/README.md)，可直接执行的日策略见 [outputs/tables/q2_daily_strategy.csv](outputs/tables/q2_daily_strategy.csv)。
 
+严格审查结论见 [outputs/results/q2_strict_review.md](outputs/results/q2_strict_review.md)。论文图表由 [code/plot_q2_matlab.m](code/plot_q2_matlab.m) 直接读取正式结果表生成，输出位于 `outputs/figures/`，同时提供 PDF 矢量版与 600 dpi PNG。
+
 **当前状态：代码、完整生成结果、13 项单元测试和 36 项输出一致性验证均已完成。**
