@@ -5,10 +5,15 @@ from __future__ import annotations
 import unittest
 
 import numpy as np
+import pandas as pd
 
 from q2_model import (
+    apply_reference_penalty,
     build_weekly_decision_bounds,
+    count_category_upper_bound_hits,
+    goodwill_penalty_terms,
     maximum_markup_change_violation,
+    select_constrained_elasticity,
     weekly_risk_statistics,
 )
 
@@ -53,6 +58,40 @@ class MarkupSmoothingTests(unittest.TestCase):
 
 
 class GoodwillPenaltyTests(unittest.TestCase):
+    def test_margin_inactive_branch_has_zero_penalty_and_zero_gradient(self) -> None:
+        """Catches differentiating max(0, price-cost) on its inactive branch."""
+        penalty, markup_grad, q_grad = goodwill_penalty_terms(
+            price=np.array([[[5.0]]]),
+            scenario_cost=np.array([[[6.0]]]),
+            demand=np.array([[[12.0]]]),
+            available=np.array([[[10.0]]]),
+            demand_markup_derivative=np.array([[[-0.8]]]),
+            price_markup_derivative=np.array([[[4.0]]]),
+            saleable_fraction=np.array([0.9]),
+            ratio=0.1,
+        )
+
+        np.testing.assert_allclose(penalty, 0.0)
+        np.testing.assert_allclose(markup_grad, 0.0)
+        np.testing.assert_allclose(q_grad, 0.0)
+
+    def test_active_branch_derivatives_match_hand_calculation(self) -> None:
+        """Catches sign errors in goodwill-cost derivatives used by SLSQP."""
+        penalty, markup_grad, q_grad = goodwill_penalty_terms(
+            price=np.array([[[10.0]]]),
+            scenario_cost=np.array([[[6.0]]]),
+            demand=np.array([[[12.0]]]),
+            available=np.array([[[10.0]]]),
+            demand_markup_derivative=np.array([[[-1.5]]]),
+            price_markup_derivative=np.array([[[5.0]]]),
+            saleable_fraction=np.array([0.9]),
+            ratio=0.1,
+        )
+
+        np.testing.assert_allclose(penalty, 0.8)
+        np.testing.assert_allclose(markup_grad, 0.4)
+        np.testing.assert_allclose(q_grad, -0.36)
+
     def test_positive_penalty_when_demand_exceeds_available(self) -> None:
         """Goodwill penalty should be strictly positive when stockout occurs."""
         price = np.array([10.0])
@@ -62,14 +101,15 @@ class GoodwillPenaltyTests(unittest.TestCase):
         q_val = np.array([105.0])
         goodwill_ratio = 0.30
 
-        stockout = np.maximum(0.0, demand - available)
-        unit_margin = np.maximum(0.0, price - cost)
-        penalty = goodwill_ratio * unit_margin * stockout
+        penalty, _, _ = goodwill_penalty_terms(
+            price[None, None, :], cost[None, None, :], demand[None, None, :],
+            available[None, None, :], np.zeros((1, 1, 1)), np.ones((1, 1, 1)),
+            np.array([1.0]), goodwill_ratio,
+        )
 
-        self.assertGreater(float(penalty[0]), 0.0)
-        self.assertAlmostEqual(float(stockout[0]), 20.0)
+        self.assertGreater(float(penalty[0, 0, 0]), 0.0)
         expected_penalty = 0.30 * (10.0 - 6.0) * 20.0
-        self.assertAlmostEqual(float(penalty[0]), expected_penalty)
+        self.assertAlmostEqual(float(penalty[0, 0, 0]), expected_penalty)
 
     def test_zero_penalty_when_available_exceeds_demand(self) -> None:
         """No goodwill penalty when stock is sufficient."""
@@ -79,11 +119,13 @@ class GoodwillPenaltyTests(unittest.TestCase):
         available = np.array([100.0])
         goodwill_ratio = 0.30
 
-        stockout = np.maximum(0.0, demand - available)
-        unit_margin = np.maximum(0.0, price - cost)
-        penalty = goodwill_ratio * unit_margin * stockout
+        penalty, _, _ = goodwill_penalty_terms(
+            price[None, None, :], cost[None, None, :], demand[None, None, :],
+            available[None, None, :], np.zeros((1, 1, 1)), np.ones((1, 1, 1)),
+            np.array([1.0]), goodwill_ratio,
+        )
 
-        self.assertAlmostEqual(float(penalty[0]), 0.0)
+        self.assertAlmostEqual(float(penalty[0, 0, 0]), 0.0)
 
     def test_higher_goodwill_ratio_increases_replenishment_incentive(self) -> None:
         """With higher goodwill cost, the expected marginal benefit of ordering more increases."""
@@ -93,9 +135,12 @@ class GoodwillPenaltyTests(unittest.TestCase):
         available = 100.0
 
         def expected_penalty(ratio: float) -> float:
-            stockout = np.maximum(0.0, demand - available)
-            unit_margin = max(0.0, price - cost)
-            return float(ratio * unit_margin * stockout.mean())
+            penalty, _, _ = goodwill_penalty_terms(
+                np.full((2, 1, 1), price), np.full((2, 1, 1), cost),
+                demand[:, None, None], np.full((2, 1, 1), available),
+                np.zeros((2, 1, 1)), np.ones((2, 1, 1)), np.array([1.0]), ratio,
+            )
+            return float(penalty.mean())
 
         p_low = expected_penalty(0.15)
         p_high = expected_penalty(0.50)
@@ -103,15 +148,30 @@ class GoodwillPenaltyTests(unittest.TestCase):
 
 
 class ReferencePricePenaltyTests(unittest.TestCase):
+    def test_adjustment_keeps_operating_profit_separate(self) -> None:
+        """Catches reporting the regularizer as if it were operating profit."""
+        operating = np.array([[100.0, 120.0], [80.0, 140.0]])
+        markup = np.array([[0.6], [0.7]])
+        reference = np.array([0.5])
+
+        adjusted, penalty = apply_reference_penalty(operating, markup, reference, weight=10.0)
+
+        np.testing.assert_allclose(operating, [[100.0, 120.0], [80.0, 140.0]])
+        self.assertAlmostEqual(penalty, 0.5)
+        np.testing.assert_allclose(adjusted.sum(axis=1), operating.sum(axis=1) - 0.5)
+
     def test_penalty_grows_with_deviation(self) -> None:
         """Reference price penalty is quadratic in markup deviation."""
         markup = np.array([0.70, 0.90])
         ref = np.array([0.50, 0.50])
         weight = 0.02
 
-        deviation = markup - ref
-        penalty_small = weight * np.sum((np.array([0.55, 0.55]) - ref) ** 2)
-        penalty_large = weight * np.sum(deviation ** 2)
+        _, penalty_small = apply_reference_penalty(
+            np.zeros((1, 1)), np.array([[0.55, 0.55]]), ref, weight
+        )
+        _, penalty_large = apply_reference_penalty(
+            np.zeros((1, 1)), markup[None, :], ref, weight
+        )
 
         self.assertGreater(penalty_large, penalty_small)
 
@@ -121,29 +181,35 @@ class ReferencePricePenaltyTests(unittest.TestCase):
         ref = np.array([0.50, 0.60])
         weight = 0.02
 
-        deviation = markup - ref
-        penalty = weight * np.sum(deviation ** 2)
-        self.assertAlmostEqual(float(penalty), 0.0)
+        _, penalty = apply_reference_penalty(
+            np.zeros((1, 1)), markup[None, :], ref, weight
+        )
+        self.assertAlmostEqual(penalty, 0.0)
 
 
 class ConservativeElasticityTests(unittest.TestCase):
-    def test_conservative_floor_applied_when_ols_positive(self) -> None:
-        """When raw OLS is positive, the conservative floor should pull it negative."""
-        raw_ols = [0.27, -1.86, -0.16]
-        pooled = -0.25
-        conservative_floor = min(pooled, -0.40)
-        results = []
-        for r in raw_ols:
-            if r >= 0:
-                results.append(min(r, conservative_floor))
-            else:
-                results.append(r)
-        # Positive OLS gets pulled to conservative floor
-        self.assertAlmostEqual(results[0], conservative_floor)
-        # Negative OLS unchanged
-        self.assertAlmostEqual(results[1], -1.86)
-        self.assertAlmostEqual(results[2], -0.16)
-        self.assertLess(results[0], -0.30)
+    def test_nonnegative_raw_estimate_uses_data_driven_pooled_fallback(self) -> None:
+        """Catches an arbitrary hard-coded elasticity masquerading as IV estimation."""
+        selected, adjusted = select_constrained_elasticity(
+            raw=0.27,
+            shrunk=0.11,
+            pooled=-0.245,
+            bounds=(-3.0, -0.05),
+        )
+
+        self.assertTrue(adjusted)
+        self.assertAlmostEqual(selected, -0.245)
+
+class SensitivitySummaryTests(unittest.TestCase):
+    def test_upper_bound_hits_are_counted_against_each_category_bound(self) -> None:
+        """Catches comparing every category with the single global maximum markup."""
+        strategy = pd.DataFrame({
+            "category_name": ["A", "A", "B", "B"],
+            "markup_rate": [0.70, 0.65, 1.20, 1.10],
+        })
+        upper = {"A": 0.70, "B": 1.20}
+
+        self.assertEqual(count_category_upper_bound_hits(strategy, upper), 2)
 
 
 if __name__ == "__main__":

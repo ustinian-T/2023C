@@ -21,6 +21,7 @@ from sklearn.metrics import (
 )
 
 from q1_seasonality import (
+    MONTH_ORDER,
     MONTH_TO_SEASON,
     SEASON_ORDER,
 )

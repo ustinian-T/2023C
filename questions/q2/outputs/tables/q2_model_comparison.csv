@@ -1,3 +1,3 @@
-﻿model_variant,description,weekly_expected_profit_yuan,weekly_worst10pct_mean_profit_yuan,mean_stockout_probability,mean_markup_rate
-A_baseline,历史中位加价+中位需求补货,2682.990140120532,-662.1841686441525,,
-B_improved,商誉惩罚0.1+参考惩罚80.0+保守弹性(2品类调整),4125.826785141472,323.8122467481701,0.6099206349206349,0.8915594087492683
+﻿model_variant,description,weekly_expected_profit_yuan,weekly_worst10pct_mean_profit_yuan,weekly_expected_service_adjusted_profit_yuan,weekly_worst10pct_service_adjusted_profit_yuan,weekly_expected_regularized_profit_yuan,weekly_worst10pct_regularized_profit_yuan,mean_stockout_probability,mean_markup_rate
+A_baseline,历史中位加价+中位需求补货,2671.0837168555295,-700.1031395703872,2452.9322573305994,-1100.4500933716981,2452.9322573305994,-1100.4500933716981,0.499484126984127,0.6014626897442259
+B_improved,商誉成本0.1+参考正则80.0+合并弹性回退(2品类),4850.296744320931,1486.0331813577184,4515.651276341094,648.6778939811139,4169.4815047812435,302.508122421264,0.6108730158730158,0.8925362242327607

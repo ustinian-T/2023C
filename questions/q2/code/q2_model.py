@@ -43,9 +43,9 @@ ELASTICITY_BOUNDS = (-3.0, -0.05)
 
 GOODWILL_COST_RATIO = 0.10
 REFERENCE_PENALTY_WEIGHT = 80.0
-IV_ELASTICITY_ENABLED = True
+POOLED_ELASTICITY_FALLBACK_ENABLED = True
 SENSITIVITY_GOODWILL_GRID = (0.0, 0.05, 0.10, 0.20)
-SENSITIVITY_REFERENCE_GRID = (0.0, 10.0, 40.0, 100.0)
+SENSITIVITY_REFERENCE_GRID = (0.0, 50.0, 80.0, 500.0)
 
 
 @dataclass
@@ -126,7 +126,6 @@ def add_dml_features(g: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     g["logq_sd28_s1"] = g["logq"].shift(1).rolling(28).std()
     g["active_lag1"] = g["active_sku_count"].shift(1)
     g["active_lag7"] = g["active_sku_count"].shift(7)
-    g["logw_lag7_iv"] = g["logw"].shift(7)
     cols = [
         "dow_sin", "dow_cos", "doy_sin", "doy_cos", "month_sin", "month_cos", "trend",
         "logw", "logq_lag1", "logq_lag7", "logq_lag14", "logq_lag28",
@@ -196,13 +195,14 @@ def estimate_elasticities(frames: dict[str, pd.DataFrame]) -> tuple[pd.DataFrame
     for row in raw_rows:
         weight = tau2 / (tau2 + row["bootstrap_se"] ** 2)
         shrunk = weight * row["elasticity_raw"] + (1 - weight) * pooled
-        if IV_ELASTICITY_ENABLED and row["elasticity_raw"] >= 0:
-            conservative_floor = min(pooled, -0.40)
-            shrunk = min(shrunk, conservative_floor)
-            row["conservative_adjustment_applied"] = 1
+        if POOLED_ELASTICITY_FALLBACK_ENABLED:
+            projected, fallback_applied = select_constrained_elasticity(
+                row["elasticity_raw"], shrunk, pooled, ELASTICITY_BOUNDS
+            )
         else:
-            row["conservative_adjustment_applied"] = 0
-        projected = float(np.clip(shrunk, ELASTICITY_BOUNDS[0], ELASTICITY_BOUNDS[1]))
+            projected = float(np.clip(shrunk, ELASTICITY_BOUNDS[0], ELASTICITY_BOUNDS[1]))
+            fallback_applied = False
+        row["pooled_fallback_applied"] = int(fallback_applied)
         row["pooled_elasticity"] = pooled
         row["shrinkage_weight"] = weight
         row["elasticity_shrunk"] = shrunk
@@ -211,7 +211,7 @@ def estimate_elasticities(frames: dict[str, pd.DataFrame]) -> tuple[pd.DataFrame
         row["identification_label"] = (
             "negative_and_interval_below_zero" if row["ci_upper"] < 0
             else "negative_but_interval_crosses_zero" if row["elasticity_raw"] < 0
-            else "nonnegative_raw_use_conservative_floor"
+            else "nonnegative_raw_use_pooled_fallback"
         )
         used[row["category_name"]] = projected
     return pd.DataFrame(raw_rows), used
@@ -230,7 +230,6 @@ def add_forecast_features(g: pd.DataFrame) -> tuple[pd.DataFrame, list[str], lis
     g["logw_ma7_s7"] = g["logw"].shift(7).rolling(7).mean()
     g["logw_ma28_s7"] = g["logw"].shift(7).rolling(28).mean()
     g["active_lag7"] = g["active_sku_count"].shift(7)
-    g["logw_lag7_iv"] = g["logw"].shift(7)
     demand_cols = [
         "dow_sin", "dow_cos", "doy_sin", "doy_cos", "month_sin", "month_cos", "trend",
         "logq_lag7", "logq_lag14", "logq_lag21", "logq_lag28", "logq_lag56",
@@ -413,6 +412,76 @@ def lower_tail_mean(values: np.ndarray, probability: float = LOWER_TAIL_PROB) ->
     return float(np.mean(np.partition(values, k - 1)[:k]))
 
 
+def select_constrained_elasticity(
+    raw: float,
+    shrunk: float,
+    pooled: float,
+    bounds: tuple[float, float] = ELASTICITY_BOUNDS,
+) -> tuple[float, bool]:
+    """Use the empirical pooled response when a category estimate has the wrong sign."""
+    fallback_applied = bool(raw >= 0)
+    candidate = pooled if fallback_applied else shrunk
+    return float(np.clip(candidate, bounds[0], bounds[1])), fallback_applied
+
+
+def goodwill_penalty_terms(
+    price: np.ndarray,
+    scenario_cost: np.ndarray,
+    demand: np.ndarray,
+    available: np.ndarray,
+    demand_markup_derivative: np.ndarray,
+    price_markup_derivative: np.ndarray,
+    saleable_fraction: np.ndarray,
+    ratio: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return goodwill cost and its derivatives with respect to markup and order quantity."""
+    stockout_qty = np.maximum(0.0, demand - available)
+    raw_margin = price - scenario_cost
+    unit_margin = np.maximum(0.0, raw_margin)
+    stockout_active = stockout_qty > 0
+    margin_active = raw_margin > 0
+    penalty = ratio * unit_margin * stockout_qty
+    markup_gradient = np.where(
+        stockout_active,
+        ratio * (
+            margin_active * price_markup_derivative * stockout_qty
+            + unit_margin * demand_markup_derivative
+        ),
+        0.0,
+    )
+    q_gradient = np.where(
+        stockout_active,
+        -ratio * unit_margin * saleable_fraction,
+        0.0,
+    )
+    return penalty, markup_gradient, q_gradient
+
+
+def apply_reference_penalty(
+    profit_by_day: np.ndarray,
+    markup: np.ndarray,
+    reference: np.ndarray,
+    weight: float,
+) -> tuple[np.ndarray, float]:
+    """Apply a weekly deterministic regularizer without mutating operating-profit input."""
+    deviation = np.asarray(markup, dtype=float) - np.asarray(reference, dtype=float)[None, :]
+    penalty = float(weight * np.sum(deviation**2))
+    adjusted = np.asarray(profit_by_day, dtype=float).copy()
+    adjusted[:, -1] -= penalty
+    return adjusted, penalty
+
+
+def count_category_upper_bound_hits(
+    strategy: pd.DataFrame,
+    upper_by_category: dict[str, float],
+    tolerance: float = 1e-6,
+) -> int:
+    """Count decisions that reach their own category-specific markup upper bound."""
+    upper = strategy["category_name"].map(upper_by_category).to_numpy(dtype=float)
+    markup = strategy["markup_rate"].to_numpy(dtype=float)
+    return int(np.sum(np.abs(markup - upper) <= tolerance))
+
+
 def weekly_risk_statistics(
     profit_by_day: np.ndarray,
     gamma: float,
@@ -571,21 +640,35 @@ def optimize_week(
         available = (1 - loss)[None, None, :] * q[None, :, :]
         stock_limited = demand >= available
         sales = np.minimum(demand, available)
-        category_profit = price[None, :, :] * sales - scenario_cost * q[None, :, :]
+        operating_category_profit = price[None, :, :] * sales - scenario_cost * q[None, :, :]
+        goodwill_penalty = np.zeros_like(operating_category_profit)
         if goodwill_cost_ratio > 0:
-            stockout_qty = np.maximum(0.0, demand - available)
-            unit_margin = np.maximum(0.0, price[None, :, :] - scenario_cost)
-            goodwill_penalty = goodwill_cost_ratio * unit_margin * stockout_qty
-            category_profit = category_profit - goodwill_penalty
-        profit_by_day = category_profit.sum(axis=2)
-        markup_ref_arr = np.array([markup_reference[c] for c in categories], dtype=float)
+            goodwill_penalty, _, _ = goodwill_penalty_terms(
+                price[None, :, :], scenario_cost, demand, available,
+                np.zeros_like(demand), cost_future[None, :, :], 1 - loss,
+                goodwill_cost_ratio,
+            )
+        service_adjusted_category_profit = operating_category_profit - goodwill_penalty
+        operating_profit_by_day = operating_category_profit.sum(axis=2)
+        service_adjusted_profit_by_day = service_adjusted_category_profit.sum(axis=2)
+        markup_ref_arr = reference
         markup_deviation = markup - markup_ref_arr[None, :]
-        reference_penalty_total = float(reference_penalty_weight * np.sum(markup_deviation ** 2))
-        profit_by_day_adjusted = profit_by_day.copy()
-        profit_by_day_adjusted[:, -1] = profit_by_day_adjusted[:, -1] - reference_penalty_total
-        stats = weekly_risk_statistics(profit_by_day_adjusted, gamma, LOWER_TAIL_PROB)
+        regularized_profit_by_day, reference_penalty_total = apply_reference_penalty(
+            service_adjusted_profit_by_day, markup, markup_ref_arr, reference_penalty_weight
+        )
+        stats = weekly_risk_statistics(regularized_profit_by_day, gamma, LOWER_TAIL_PROB)
         if not need_gradient:
-            return stats, profit_by_day_adjusted, sales, demand, category_profit
+            return (
+                stats,
+                regularized_profit_by_day,
+                service_adjusted_profit_by_day,
+                operating_profit_by_day,
+                sales,
+                demand,
+                service_adjusted_category_profit,
+                operating_category_profit,
+                reference_penalty_total,
+            )
 
         active_exp = (raw_logd > -12) & (raw_logd < 8)
         demand_dm = (
@@ -605,20 +688,12 @@ def optimize_week(
             -scenario_cost,
         )
         if goodwill_cost_ratio > 0:
-            gw_markup_grad = np.where(
-                stockout_qty > 0,
-                goodwill_cost_ratio * (
-                    cost_future[None, :, :] * stockout_qty
-                    + unit_margin * demand_dm
-                ),
-                0.0,
+            _, gw_markup_grad, gw_q_grad = goodwill_penalty_terms(
+                price[None, :, :], scenario_cost, demand, available,
+                demand_dm, cost_future[None, :, :], 1 - loss,
+                goodwill_cost_ratio,
             )
             markup_gradient = markup_gradient - gw_markup_grad
-            gw_q_grad = np.where(
-                stockout_qty > 0,
-                -goodwill_cost_ratio * unit_margin * (1 - loss)[None, None, :],
-                0.0,
-            )
             q_gradient = q_gradient - gw_q_grad
         ref_markup_grad = 2.0 * reference_penalty_weight * markup_deviation
         markup_gradient = markup_gradient - ref_markup_grad[None, :, :]
@@ -626,14 +701,25 @@ def optimize_week(
             [markup_gradient.reshape(SCENARIO_COUNT, -1), q_gradient.reshape(SCENARIO_COUNT, -1)],
             axis=1,
         )
-        weekly_profit = profit_by_day_adjusted.sum(axis=1)
+        weekly_profit = regularized_profit_by_day.sum(axis=1)
         k = max(1, int(math.ceil(LOWER_TAIL_PROB * len(weekly_profit))))
         tail_idx = np.argpartition(weekly_profit, k - 1)[:k]
         score_gradient = (
             (1 - gamma) * scenario_gradient.mean(axis=0)
             + gamma * scenario_gradient[tail_idx].mean(axis=0)
         )
-        return stats, profit_by_day_adjusted, sales, demand, category_profit, score_gradient
+        return (
+            stats,
+            regularized_profit_by_day,
+            service_adjusted_profit_by_day,
+            operating_profit_by_day,
+            sales,
+            demand,
+            service_adjusted_category_profit,
+            operating_category_profit,
+            reference_penalty_total,
+            score_gradient,
+        )
 
     weekly_bounds = build_weekly_decision_bounds(
         categories, markup_global, reference, delta, q_upper, n_days
@@ -690,19 +776,32 @@ def optimize_week(
 
     weekly_candidates.sort(key=lambda item: item[0], reverse=True)
     score, z, weekly_local, initial_objective = weekly_candidates[0]
-    stats, profit_by_day, sales, demand, category_profit = evaluate_weekly(z)
+    (
+        stats,
+        regularized_profit_by_day,
+        service_adjusted_profit_by_day,
+        operating_profit_by_day,
+        sales,
+        demand,
+        service_adjusted_category_profit,
+        operating_category_profit,
+        reference_penalty_total,
+    ) = evaluate_weekly(z)
     markup = z[:n_days * n_categories].reshape(n_days, n_categories)
     q = z[n_days * n_categories:].reshape(n_days, n_categories)
     price = cost_future * (1 + markup)
-    weekly_profit = profit_by_day.sum(axis=1)
-    k = max(1, int(math.ceil(LOWER_TAIL_PROB * len(weekly_profit))))
-    weekly_tail_idx = np.argpartition(weekly_profit, k - 1)[:k]
+    weekly_regularized_profit = regularized_profit_by_day.sum(axis=1)
+    weekly_service_adjusted_profit = service_adjusted_profit_by_day.sum(axis=1)
+    weekly_operating_profit = operating_profit_by_day.sum(axis=1)
+    k = max(1, int(math.ceil(LOWER_TAIL_PROB * len(weekly_regularized_profit))))
+    weekly_tail_idx = np.argpartition(weekly_regularized_profit, k - 1)[:k]
 
     strategy_rows = []
     daily_rows = []
     for h, date in enumerate(FORECAST_DATES):
-        daily_profit = profit_by_day[:, h]
-        daily_tail = lower_tail_mean(daily_profit)
+        daily_regularized_profit = regularized_profit_by_day[:, h]
+        daily_service_adjusted_profit = service_adjusted_profit_by_day[:, h]
+        daily_operating_profit = operating_profit_by_day[:, h]
         for j, c in enumerate(categories):
             strategy_rows.append({
                 "risk_weight": gamma,
@@ -717,9 +816,19 @@ def optimize_week(
                 "expected_demand_kg": float(demand[:, h, j].mean()),
                 "expected_sales_kg": float(sales[:, h, j].mean()),
                 "expected_unsold_or_loss_kg": float(q[h, j] - sales[:, h, j].mean()),
-                "expected_profit_yuan": float(category_profit[:, h, j].mean()),
-                "worst10pct_weekly_profit_contribution_yuan": float(
-                    category_profit[weekly_tail_idx, h, j].mean()
+                "expected_profit_yuan": float(operating_category_profit[:, h, j].mean()),
+                "expected_goodwill_cost_yuan": float(
+                    (operating_category_profit[:, h, j]
+                     - service_adjusted_category_profit[:, h, j]).mean()
+                ),
+                "expected_service_adjusted_profit_yuan": float(
+                    service_adjusted_category_profit[:, h, j].mean()
+                ),
+                "worst10pct_weekly_operating_profit_contribution_yuan": float(
+                    operating_category_profit[weekly_tail_idx, h, j].mean()
+                ),
+                "worst10pct_weekly_service_adjusted_profit_contribution_yuan": float(
+                    service_adjusted_category_profit[weekly_tail_idx, h, j].mean()
                 ),
                 "stockout_probability": float(
                     np.mean(demand[:, h, j] > (1 - loss[j]) * q[h, j])
@@ -728,20 +837,26 @@ def optimize_week(
         daily_rows.append({
             "risk_weight": gamma,
             "date": str(date.date()),
-            "daily_risk_adjusted_diagnostic": (
-                (1 - gamma) * float(daily_profit.mean()) + gamma * daily_tail
-            ),
-            "expected_profit_yuan": float(daily_profit.mean()),
-            "worst10pct_mean_profit_yuan": daily_tail,
-            "profit_std_yuan": float(daily_profit.std(ddof=1)),
+            "expected_operating_profit_yuan": float(daily_operating_profit.mean()),
+            "expected_service_adjusted_profit_yuan": float(daily_service_adjusted_profit.mean()),
+            "expected_regularized_profit_yuan": float(daily_regularized_profit.mean()),
+            "worst10pct_operating_profit_yuan": lower_tail_mean(daily_operating_profit),
+            "worst10pct_service_adjusted_profit_yuan": lower_tail_mean(daily_service_adjusted_profit),
+            "worst10pct_regularized_profit_yuan": lower_tail_mean(daily_regularized_profit),
+            "regularized_profit_std_yuan": float(daily_regularized_profit.std(ddof=1)),
         })
 
     weekly_row = {
         "risk_weight": gamma,
         "risk_adjusted_objective": stats["risk_adjusted_objective"],
-        "weekly_expected_profit_yuan": stats["weekly_expected_profit"],
-        "weekly_worst10pct_mean_profit_yuan": stats["weekly_lower_tail_mean"],
-        "weekly_profit_std_yuan": float(weekly_profit.std(ddof=1)),
+        "weekly_expected_profit_yuan": float(weekly_operating_profit.mean()),
+        "weekly_worst10pct_mean_profit_yuan": lower_tail_mean(weekly_operating_profit),
+        "weekly_expected_service_adjusted_profit_yuan": float(weekly_service_adjusted_profit.mean()),
+        "weekly_worst10pct_service_adjusted_profit_yuan": lower_tail_mean(weekly_service_adjusted_profit),
+        "weekly_expected_regularized_profit_yuan": stats["weekly_expected_profit"],
+        "weekly_worst10pct_regularized_profit_yuan": stats["weekly_lower_tail_mean"],
+        "reference_penalty_yuan": reference_penalty_total,
+        "weekly_regularized_profit_std_yuan": float(weekly_regularized_profit.std(ddof=1)),
     }
     seed_gap = 0.0
     if len(weekly_candidates) > 1:
@@ -850,7 +965,9 @@ def main() -> None:
 
     # Operational baseline: median historical markup and median scenario demand replenishment.
     baseline_rows = []
-    baseline_profit_columns = []
+    baseline_operating_profit_columns = []
+    baseline_service_adjusted_profit_columns = []
+    baseline_stockout_probabilities = []
     for h, date in enumerate(FORECAST_DATES):
         prices = np.array([cost_future[h, j] * (1 + markup_reference[c]) for j, c in enumerate(categories)])
         logd = alpha_future[h][None, :] + theta[None, :] * np.log(prices)[None, :] + demand_scen[:, h, :]
@@ -858,17 +975,34 @@ def main() -> None:
         q = np.median(demand, axis=0) / (1 - loss)
         scenario_cost = np.exp(np.log(cost_future[h])[None, :] + cost_scen_resid[:, h, :])
         sales = np.minimum(demand, (1 - loss)[None, :] * q[None, :])
-        profit = (prices[None, :] * sales - scenario_cost * q[None, :]).sum(axis=1)
-        baseline_profit_columns.append(profit)
+        operating_category_profit = prices[None, :] * sales - scenario_cost * q[None, :]
+        stockout_qty = np.maximum(0.0, demand - (1 - loss)[None, :] * q[None, :])
+        goodwill_cost = (
+            GOODWILL_COST_RATIO
+            * np.maximum(0.0, prices[None, :] - scenario_cost)
+            * stockout_qty
+        )
+        service_adjusted_category_profit = operating_category_profit - goodwill_cost
+        operating_profit = operating_category_profit.sum(axis=1)
+        service_adjusted_profit = service_adjusted_category_profit.sum(axis=1)
+        baseline_stockout_probabilities.append(float(np.mean(stockout_qty > 0)))
+        baseline_operating_profit_columns.append(operating_profit)
+        baseline_service_adjusted_profit_columns.append(service_adjusted_profit)
         baseline_rows.append({
             "date": str(date.date()),
-            "expected_profit_yuan": float(profit.mean()),
-            "worst10pct_mean_profit_yuan": lower_tail_mean(profit),
-            "profit_std_yuan": float(profit.std(ddof=1)),
+            "expected_operating_profit_yuan": float(operating_profit.mean()),
+            "expected_goodwill_cost_yuan": float(goodwill_cost.sum(axis=1).mean()),
+            "expected_service_adjusted_profit_yuan": float(service_adjusted_profit.mean()),
+            "worst10pct_operating_profit_yuan": lower_tail_mean(operating_profit),
+            "worst10pct_service_adjusted_profit_yuan": lower_tail_mean(service_adjusted_profit),
+            "service_adjusted_profit_std_yuan": float(service_adjusted_profit.std(ddof=1)),
         })
     baseline = pd.DataFrame(baseline_rows)
-    baseline_weekly_stats = weekly_risk_statistics(
-        np.column_stack(baseline_profit_columns), MAIN_RISK_WEIGHT, LOWER_TAIL_PROB
+    baseline_operating_weekly_stats = weekly_risk_statistics(
+        np.column_stack(baseline_operating_profit_columns), MAIN_RISK_WEIGHT, LOWER_TAIL_PROB
+    )
+    baseline_service_weekly_stats = weekly_risk_statistics(
+        np.column_stack(baseline_service_adjusted_profit_columns), MAIN_RISK_WEIGHT, LOWER_TAIL_PROB
     )
 
     demand_metrics = pd.DataFrame([forecasts[c].demand_metrics for c in categories])
@@ -889,9 +1023,8 @@ def main() -> None:
 
     # Sensitivity analysis: scan goodwill_cost_ratio and reference_penalty_weight
     sensitivity_rows = []
-    goodwill_values = [0.0, 0.05, GOODWILL_COST_RATIO, 0.20]
-    reference_values = [0.0, 50.0, REFERENCE_PENALTY_WEIGHT, 500.0]
-    for gw in goodwill_values:
+    upper_by_category = {c: markup_global[c][1] for c in categories}
+    for gw in SENSITIVITY_GOODWILL_GRID:
         strategy_s, daily_s, weekly_s, _ = optimize_week(
             MAIN_RISK_WEIGHT, categories, alpha_future, cost_future, theta, loss,
             demand_scen, cost_scen_resid, markup_global, markup_change,
@@ -904,15 +1037,24 @@ def main() -> None:
             "parameter": "goodwill_cost_ratio", "value": gw,
             "weekly_expected_profit_yuan": float(weekly_s["weekly_expected_profit_yuan"].iloc[0]),
             "weekly_worst10pct_mean_profit_yuan": float(weekly_s["weekly_worst10pct_mean_profit_yuan"].iloc[0]),
+            "weekly_expected_service_adjusted_profit_yuan": float(
+                weekly_s["weekly_expected_service_adjusted_profit_yuan"].iloc[0]
+            ),
+            "weekly_expected_regularized_profit_yuan": float(
+                weekly_s["weekly_expected_regularized_profit_yuan"].iloc[0]
+            ),
+            "weekly_worst10pct_regularized_profit_yuan": float(
+                weekly_s["weekly_worst10pct_regularized_profit_yuan"].iloc[0]
+            ),
             "mean_stockout_probability": float(strategy_s["stockout_probability"].mean()),
             "mean_markup_rate": float(strategy_s["markup_rate"].mean()),
-            "markups_at_upper_bound": int((strategy_s["markup_rate"] >= strategy_s["markup_rate"].max() - 1e-9).sum()),
+            "markups_at_upper_bound": count_category_upper_bound_hits(
+                strategy_s, upper_by_category
+            ),
             "weekly_replenishment_kg": float(strategy_s["replenishment_kg"].sum()),
         }
         sensitivity_rows.append(sens_row)
-    for rw in reference_values:
-        if np.isclose(rw, REFERENCE_PENALTY_WEIGHT):
-            continue  # already computed above
+    for rw in SENSITIVITY_REFERENCE_GRID:
         strategy_s, daily_s, weekly_s, _ = optimize_week(
             MAIN_RISK_WEIGHT, categories, alpha_future, cost_future, theta, loss,
             demand_scen, cost_scen_resid, markup_global, markup_change,
@@ -925,9 +1067,20 @@ def main() -> None:
             "parameter": "reference_penalty_weight", "value": rw,
             "weekly_expected_profit_yuan": float(weekly_s["weekly_expected_profit_yuan"].iloc[0]),
             "weekly_worst10pct_mean_profit_yuan": float(weekly_s["weekly_worst10pct_mean_profit_yuan"].iloc[0]),
+            "weekly_expected_service_adjusted_profit_yuan": float(
+                weekly_s["weekly_expected_service_adjusted_profit_yuan"].iloc[0]
+            ),
+            "weekly_expected_regularized_profit_yuan": float(
+                weekly_s["weekly_expected_regularized_profit_yuan"].iloc[0]
+            ),
+            "weekly_worst10pct_regularized_profit_yuan": float(
+                weekly_s["weekly_worst10pct_regularized_profit_yuan"].iloc[0]
+            ),
             "mean_stockout_probability": float(strategy_s["stockout_probability"].mean()),
             "mean_markup_rate": float(strategy_s["markup_rate"].mean()),
-            "markups_at_upper_bound": int((strategy_s["markup_rate"] >= strategy_s["markup_rate"].max() - 1e-9).sum()),
+            "markups_at_upper_bound": count_category_upper_bound_hits(
+                strategy_s, upper_by_category
+            ),
             "weekly_replenishment_kg": float(strategy_s["replenishment_kg"].sum()),
         }
         sensitivity_rows.append(sens_row)
@@ -939,21 +1092,37 @@ def main() -> None:
     risk_high = weekly_all[np.isclose(weekly_all["risk_weight"], 0.50)].iloc[0]
 
     # Model comparison: baseline vs improved
-    conservative_count = int(elasticity_table["conservative_adjustment_applied"].sum()) if "conservative_adjustment_applied" in elasticity_table.columns else 0
+    fallback_count = int(elasticity_table["pooled_fallback_applied"].sum())
     comparison_rows = [
         {
             "model_variant": "A_baseline",
             "description": "历史中位加价+中位需求补货",
-            "weekly_expected_profit_yuan": baseline_weekly_stats["weekly_expected_profit"],
-            "weekly_worst10pct_mean_profit_yuan": baseline_weekly_stats["weekly_lower_tail_mean"],
-            "mean_stockout_probability": float("nan"),
-            "mean_markup_rate": float("nan"),
+            "weekly_expected_profit_yuan": baseline_operating_weekly_stats["weekly_expected_profit"],
+            "weekly_worst10pct_mean_profit_yuan": baseline_operating_weekly_stats["weekly_lower_tail_mean"],
+            "weekly_expected_service_adjusted_profit_yuan": baseline_service_weekly_stats["weekly_expected_profit"],
+            "weekly_worst10pct_service_adjusted_profit_yuan": baseline_service_weekly_stats["weekly_lower_tail_mean"],
+            "weekly_expected_regularized_profit_yuan": baseline_service_weekly_stats["weekly_expected_profit"],
+            "weekly_worst10pct_regularized_profit_yuan": baseline_service_weekly_stats["weekly_lower_tail_mean"],
+            "mean_stockout_probability": float(np.mean(baseline_stockout_probabilities)),
+            "mean_markup_rate": float(np.mean(list(markup_reference.values()))),
         },
         {
             "model_variant": "B_improved",
-            "description": f"商誉惩罚{GOODWILL_COST_RATIO}+参考惩罚{REFERENCE_PENALTY_WEIGHT}+保守弹性({conservative_count}品类调整)",
+            "description": f"商誉成本{GOODWILL_COST_RATIO}+参考正则{REFERENCE_PENALTY_WEIGHT}+合并弹性回退({fallback_count}品类)",
             "weekly_expected_profit_yuan": float(main_weekly["weekly_expected_profit_yuan"]),
             "weekly_worst10pct_mean_profit_yuan": float(main_weekly["weekly_worst10pct_mean_profit_yuan"]),
+            "weekly_expected_service_adjusted_profit_yuan": float(
+                main_weekly["weekly_expected_service_adjusted_profit_yuan"]
+            ),
+            "weekly_worst10pct_service_adjusted_profit_yuan": float(
+                main_weekly["weekly_worst10pct_service_adjusted_profit_yuan"]
+            ),
+            "weekly_expected_regularized_profit_yuan": float(
+                main_weekly["weekly_expected_regularized_profit_yuan"]
+            ),
+            "weekly_worst10pct_regularized_profit_yuan": float(
+                main_weekly["weekly_worst10pct_regularized_profit_yuan"]
+            ),
             "mean_stockout_probability": float(main_strategy["stockout_probability"].mean()),
             "mean_markup_rate": float(main_strategy["markup_rate"].mean()),
         },
@@ -962,7 +1131,7 @@ def main() -> None:
     comparison.to_csv(TABLES / "q2_model_comparison.csv", index=False, encoding="utf-8-sig")
 
     summary = {
-        "model": "cross-fitted semi-parametric elasticity (OLS+IV) + aligned-lag GBDT/seasonal blend + joint moving-block scenarios + mean-lower-CVaR optimization + goodwill/ref-price penalties",
+        "model": "cross-fitted semi-parametric conditional price response + empirical pooled-elasticity fallback + aligned-lag GBDT/seasonal blend + joint moving-block scenarios + weekly mean-lower-tail optimization + goodwill cost/reference regularization",
         "forecast_dates": [str(d.date()) for d in FORECAST_DATES],
         "categories": categories,
         "random_seed": SEED,
@@ -971,8 +1140,8 @@ def main() -> None:
         "penalty_parameters": {
             "goodwill_cost_ratio": GOODWILL_COST_RATIO,
             "reference_penalty_weight": REFERENCE_PENALTY_WEIGHT,
-            "conservative_elasticity_enabled": IV_ELASTICITY_ENABLED,
-            "categories_with_conservative_adjustment": conservative_count,
+            "pooled_elasticity_fallback_enabled": POOLED_ELASTICITY_FALLBACK_ENABLED,
+            "categories_with_pooled_fallback": fallback_count,
         },
         "forecast_metrics": {
             "demand_weighted_wape": float(np.average(metrics["demand_wape"], weights=metrics["demand_cv_n"])),
@@ -986,6 +1155,19 @@ def main() -> None:
             "weekly_expected_sales_kg": float(main_strategy["expected_sales_kg"].sum()),
             "weekly_expected_profit_yuan": float(main_weekly["weekly_expected_profit_yuan"]),
             "weekly_worst10pct_mean_profit_yuan": float(main_weekly["weekly_worst10pct_mean_profit_yuan"]),
+            "weekly_expected_service_adjusted_profit_yuan": float(
+                main_weekly["weekly_expected_service_adjusted_profit_yuan"]
+            ),
+            "weekly_worst10pct_service_adjusted_profit_yuan": float(
+                main_weekly["weekly_worst10pct_service_adjusted_profit_yuan"]
+            ),
+            "weekly_expected_regularized_profit_yuan": float(
+                main_weekly["weekly_expected_regularized_profit_yuan"]
+            ),
+            "weekly_worst10pct_regularized_profit_yuan": float(
+                main_weekly["weekly_worst10pct_regularized_profit_yuan"]
+            ),
+            "reference_penalty_yuan": float(main_weekly["reference_penalty_yuan"]),
             "weekly_risk_adjusted_objective": float(main_weekly["risk_adjusted_objective"]),
             "mean_markup_rate": float(main_strategy["markup_rate"].mean()),
             "price_range_yuan_per_kg": [float(main_strategy["price_yuan_per_kg"].min()), float(main_strategy["price_yuan_per_kg"].max())],
@@ -993,16 +1175,24 @@ def main() -> None:
             "mean_stockout_probability": float(main_strategy["stockout_probability"].mean()),
         },
         "baseline": {
-            "weekly_expected_profit_yuan": baseline_weekly_stats["weekly_expected_profit"],
-            "weekly_worst10pct_mean_profit_yuan": baseline_weekly_stats["weekly_lower_tail_mean"],
+            "weekly_expected_profit_yuan": baseline_operating_weekly_stats["weekly_expected_profit"],
+            "weekly_worst10pct_mean_profit_yuan": baseline_operating_weekly_stats["weekly_lower_tail_mean"],
+            "weekly_expected_service_adjusted_profit_yuan": baseline_service_weekly_stats["weekly_expected_profit"],
+            "weekly_worst10pct_service_adjusted_profit_yuan": baseline_service_weekly_stats["weekly_lower_tail_mean"],
+            "weekly_expected_regularized_profit_yuan": baseline_service_weekly_stats["weekly_expected_profit"],
+            "weekly_worst10pct_regularized_profit_yuan": baseline_service_weekly_stats["weekly_lower_tail_mean"],
         },
         "risk_neutral": {
             "weekly_expected_profit_yuan": float(risk_neutral["weekly_expected_profit_yuan"]),
             "weekly_worst10pct_mean_profit_yuan": float(risk_neutral["weekly_worst10pct_mean_profit_yuan"]),
+            "weekly_expected_regularized_profit_yuan": float(risk_neutral["weekly_expected_regularized_profit_yuan"]),
+            "weekly_worst10pct_regularized_profit_yuan": float(risk_neutral["weekly_worst10pct_regularized_profit_yuan"]),
         },
         "high_risk_aversion": {
             "weekly_expected_profit_yuan": float(risk_high["weekly_expected_profit_yuan"]),
             "weekly_worst10pct_mean_profit_yuan": float(risk_high["weekly_worst10pct_mean_profit_yuan"]),
+            "weekly_expected_regularized_profit_yuan": float(risk_high["weekly_expected_regularized_profit_yuan"]),
+            "weekly_worst10pct_regularized_profit_yuan": float(risk_high["weekly_worst10pct_regularized_profit_yuan"]),
         },
         "checks": {
             "constraint_max_violation": float(optimizer["max_bound_violation"].max()),
@@ -1018,6 +1208,11 @@ def main() -> None:
     summary["main_strategy"]["tail_profit_change_yuan_vs_baseline"] = (
         summary["main_strategy"]["weekly_worst10pct_mean_profit_yuan"]
         - summary["baseline"]["weekly_worst10pct_mean_profit_yuan"]
+    )
+    summary["main_strategy"]["service_adjusted_profit_improvement_vs_baseline"] = (
+        summary["main_strategy"]["weekly_expected_service_adjusted_profit_yuan"]
+        / summary["baseline"]["weekly_expected_service_adjusted_profit_yuan"]
+        - 1
     )
     (RESULTS / "q2_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, indent=2))

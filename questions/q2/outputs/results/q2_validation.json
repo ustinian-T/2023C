@@ -1,6 +1,6 @@
 {
-  "passed": 31,
-  "total": 31,
+  "passed": 36,
+  "total": 36,
   "tests": [
     {
       "name": "42 category-day decisions",
@@ -93,7 +93,22 @@
       "details": ""
     },
     {
-      "name": "weekly expected profit equals daily expected-profit sum",
+      "name": "weekly operating profit equals daily operating-profit sum",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "weekly operating profit equals category contribution sum",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "weekly service-adjusted profit equals category contribution sum",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "regularized profit subtracts reference penalty exactly once",
       "status": "PASS",
       "details": ""
     },
@@ -103,7 +118,7 @@
       "details": ""
     },
     {
-      "name": "summary uses joint weekly tail",
+      "name": "summary uses joint weekly regularized tail",
       "status": "PASS",
       "details": ""
     },
@@ -113,9 +128,9 @@
       "details": ""
     },
     {
-      "name": "stockout probability not too low (goodwill penalty not excessive)",
+      "name": "stockout probability is a valid nondegenerate probability",
       "status": "PASS",
-      "details": "0.6099206349206349"
+      "details": "0.6108730158730158"
     },
     {
       "name": "not all markups at upper bound (reference penalty effective)",
@@ -123,12 +138,17 @@
       "details": "28/42 at upper bound"
     },
     {
-      "name": "IV elasticities negative for IV-active categories",
+      "name": "nonnegative category responses use empirical pooled fallback",
       "status": "PASS",
       "details": ""
     },
     {
-      "name": "weekly expected profit at least 1.2x baseline",
+      "name": "operating profit at least 1.2x operating baseline",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "service-adjusted comparison uses same accounting basis",
       "status": "PASS",
       "details": ""
     },
@@ -148,9 +168,14 @@
       "details": ""
     },
     {
-      "name": "sensitivity rows present",
+      "name": "complete sensitivity grid",
       "status": "PASS",
-      "details": "7"
+      "details": "8"
+    },
+    {
+      "name": "sensitivity upper-bound count uses category bounds",
+      "status": "PASS",
+      "details": "28/28"
     },
     {
       "name": "penalty parameters in summary",

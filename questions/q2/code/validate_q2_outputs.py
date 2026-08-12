@@ -68,36 +68,46 @@ tests.append(check(
 ))
 main_weekly = weekly[np.isclose(weekly["risk_weight"], summary["risk"]["main_risk_weight"])].iloc[0]
 main_daily = daily[np.isclose(daily["risk_weight"], summary["risk"]["main_risk_weight"])]
-tests.append(check("weekly expected profit equals daily expected-profit sum", np.isclose(
-    main_weekly["weekly_expected_profit_yuan"], main_daily["expected_profit_yuan"].sum(), atol=1e-6,
+tests.append(check("weekly operating profit equals daily operating-profit sum", np.isclose(
+    main_weekly["weekly_expected_profit_yuan"],
+    main_daily["expected_operating_profit_yuan"].sum(), atol=1e-6,
 )))
-tests.append(check("weekly tail is evaluated after seven-day aggregation", not np.isclose(
-    main_weekly["weekly_worst10pct_mean_profit_yuan"],
-    main_daily["worst10pct_mean_profit_yuan"].sum(),
+tests.append(check("weekly operating profit equals category contribution sum", np.isclose(
+    main_weekly["weekly_expected_profit_yuan"], strategy["expected_profit_yuan"].sum(), atol=1e-6,
+)))
+tests.append(check("weekly service-adjusted profit equals category contribution sum", np.isclose(
+    main_weekly["weekly_expected_service_adjusted_profit_yuan"],
+    strategy["expected_service_adjusted_profit_yuan"].sum(), atol=1e-6,
+)))
+tests.append(check("regularized profit subtracts reference penalty exactly once", np.isclose(
+    main_weekly["weekly_expected_regularized_profit_yuan"],
+    main_weekly["weekly_expected_service_adjusted_profit_yuan"]
+    - main_weekly["reference_penalty_yuan"],
     atol=1e-6,
 )))
-tests.append(check("summary uses joint weekly tail", np.isclose(
-    summary["main_strategy"]["weekly_worst10pct_mean_profit_yuan"],
-    main_weekly["weekly_worst10pct_mean_profit_yuan"],
+tests.append(check("weekly tail is evaluated after seven-day aggregation", not np.isclose(
+    main_weekly["weekly_worst10pct_regularized_profit_yuan"],
+    main_daily["worst10pct_regularized_profit_yuan"].sum(),
+    atol=1e-6,
+)))
+tests.append(check("summary uses joint weekly regularized tail", np.isclose(
+    summary["main_strategy"]["weekly_worst10pct_regularized_profit_yuan"],
+    main_weekly["weekly_worst10pct_regularized_profit_yuan"],
     atol=1e-6,
 )))
 tests.append(check("risk tradeoff direction", (
-    summary["risk_neutral"]["weekly_expected_profit_yuan"]
-    >= summary["main_strategy"]["weekly_expected_profit_yuan"]
-    >= summary["high_risk_aversion"]["weekly_expected_profit_yuan"]
-    and summary["risk_neutral"]["weekly_worst10pct_mean_profit_yuan"]
-    <= summary["main_strategy"]["weekly_worst10pct_mean_profit_yuan"]
-    <= summary["high_risk_aversion"]["weekly_worst10pct_mean_profit_yuan"]
+    summary["risk_neutral"]["weekly_expected_regularized_profit_yuan"]
+    >= summary["main_strategy"]["weekly_expected_regularized_profit_yuan"]
+    >= summary["high_risk_aversion"]["weekly_expected_regularized_profit_yuan"]
+    and summary["risk_neutral"]["weekly_worst10pct_regularized_profit_yuan"]
+    <= summary["main_strategy"]["weekly_worst10pct_regularized_profit_yuan"]
+    <= summary["high_risk_aversion"]["weekly_worst10pct_regularized_profit_yuan"]
 )))
 
 # New checks for improved model
-tests.append(check(
-    "stockout probability not too low (goodwill penalty not excessive)",
-    strategy["stockout_probability"].mean() >= 0.15,
-    str(strategy["stockout_probability"].mean()),
-))
-n_categories = strategy["category_name"].nunique()
-n_days = strategy["date"].nunique()
+tests.append(check("stockout probability is a valid nondegenerate probability", (
+    0.0 < strategy["stockout_probability"].mean() < 0.90
+), str(strategy["stockout_probability"].mean())))
 at_bound_count = 0
 for _, row in strategy.iterrows():
     b = bounds.loc[row["category_name"]]
@@ -109,14 +119,21 @@ tests.append(check(
     at_bound_count < total_decisions * 0.85,
     f"{at_bound_count}/{total_decisions} at upper bound",
 ))
+fallback_rows = elasticity[elasticity["elasticity_raw"] >= 0]
+tests.append(check("nonnegative category responses use empirical pooled fallback", (
+    len(fallback_rows) > 0
+    and fallback_rows["pooled_fallback_applied"].eq(1).all()
+    and np.allclose(fallback_rows["elasticity_used"], fallback_rows["pooled_elasticity"])
+)))
 tests.append(check(
-    "IV elasticities negative for IV-active categories",
-    True,  # elasticities already all <= -0.05 from check 12
-))
-tests.append(check(
-    "weekly expected profit at least 1.2x baseline",
+    "operating profit at least 1.2x operating baseline",
     summary["main_strategy"]["weekly_expected_profit_yuan"]
     >= 1.2 * summary["baseline"]["weekly_expected_profit_yuan"],
+))
+tests.append(check(
+    "service-adjusted comparison uses same accounting basis",
+    summary["main_strategy"]["weekly_expected_service_adjusted_profit_yuan"]
+    >= 1.2 * summary["baseline"]["weekly_expected_service_adjusted_profit_yuan"],
 ))
 tests.append(check(
     "improved two-seed stability gap < 1e-4",
@@ -131,10 +148,20 @@ tests.append(check("model comparison file exists", comp_path.exists()))
 if sens_path.exists():
     sens = pd.read_csv(sens_path)
     tests.append(check(
-        "sensitivity rows present",
-        len(sens) >= 4,
+        "complete sensitivity grid",
+        len(sens) == 8
+        and sens.loc[sens["parameter"].eq("goodwill_cost_ratio"), "value"].nunique() == 4
+        and sens.loc[sens["parameter"].eq("reference_penalty_weight"), "value"].nunique() == 4,
         str(len(sens)),
     ))
+    main_sensitivity = sens[
+        sens["parameter"].eq("reference_penalty_weight")
+        & np.isclose(sens["value"], summary["penalty_parameters"]["reference_penalty_weight"])
+    ]
+    tests.append(check("sensitivity upper-bound count uses category bounds", (
+        len(main_sensitivity) == 1
+        and int(main_sensitivity["markups_at_upper_bound"].iloc[0]) == at_bound_count
+    ), f"{int(main_sensitivity['markups_at_upper_bound'].iloc[0]) if len(main_sensitivity) else 'missing'}/{at_bound_count}"))
 if "penalty_parameters" in summary:
     pp = summary["penalty_parameters"]
     tests.append(check(
