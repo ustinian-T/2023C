@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "check_count": 71,
-  "passed": 71,
+  "check_count": 69,
+  "passed": 69,
   "failed": 0,
   "checks": [
     {
@@ -205,11 +205,11 @@
       "passed": true
     },
     {
-      "check": "fig_q1_category_distributions.png/.pdf exist",
+      "check": "fig_q1_category_distribution_box.png/.pdf exist",
       "passed": true
     },
     {
-      "check": "fig_q1_category_distributions.png dimensions >= 1200x800",
+      "check": "fig_q1_category_distribution_box.png dimensions >= 1200x800",
       "passed": true
     },
     {
@@ -221,35 +221,27 @@
       "passed": true
     },
     {
-      "check": "fig_q1_k_selection.png/.pdf exist",
+      "check": "fig_q1_k_selection_matrix.png/.pdf exist",
       "passed": true
     },
     {
-      "check": "fig_q1_k_selection.png dimensions >= 1200x800",
+      "check": "fig_q1_k_selection_matrix.png dimensions >= 1200x800",
       "passed": true
     },
     {
-      "check": "fig_q1_cluster_profiles.png/.pdf exist",
+      "check": "fig_q1_cluster_profile_heatmaps.png/.pdf exist",
       "passed": true
     },
     {
-      "check": "fig_q1_cluster_profiles.png dimensions >= 1200x800",
+      "check": "fig_q1_cluster_profile_heatmaps.png dimensions >= 1200x800",
       "passed": true
     },
     {
-      "check": "fig_q1_category_relationships.png/.pdf exist",
+      "check": "fig_q1_hierarchical_relationships.png/.pdf exist",
       "passed": true
     },
     {
-      "check": "fig_q1_category_relationships.png dimensions >= 1200x800",
-      "passed": true
-    },
-    {
-      "check": "fig_q1_cluster_relationships.png/.pdf exist",
-      "passed": true
-    },
-    {
-      "check": "fig_q1_cluster_relationships.png dimensions >= 1200x800",
+      "check": "fig_q1_hierarchical_relationships.png dimensions >= 1200x800",
       "passed": true
     },
     {
