@@ -12,9 +12,12 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TABLES = ROOT / "tables"
-FIGURES = ROOT / "figures"
-RESULTS = ROOT / "results"
+OUTPUTS = ROOT / "outputs"
+TABLES = OUTPUTS / "tables"
+FIGURES = OUTPUTS / "figures"
+RESULTS = OUTPUTS / "results"
+WORKBOOKS = OUTPUTS / "workbooks"
+REPORT = ROOT / "report" / "main.tex"
 
 
 def check(condition: bool, message: str, checks: list[dict]) -> None:
@@ -71,14 +74,14 @@ def main() -> None:
         check(width >= 3000 and height >= 1800, f"{base} raster dimensions are publication grade", checks)
         image_details.append({"base": base, "width": width, "height": height, "dpi": dpi})
 
-    workbook = ROOT / "outputs" / "q1_model" / "q1_model_results.xlsx"
+    workbook = WORKBOOKS / "q1_model_results.xlsx"
     check(workbook.exists() and workbook.stat().st_size > 20_000, "result workbook exists", checks)
     check(zipfile.is_zipfile(workbook), "result workbook is a valid XLSX zip container", checks)
     with zipfile.ZipFile(workbook) as archive:
         check("xl/workbook.xml" in archive.namelist(), "result workbook contains workbook.xml", checks)
 
-    paper = ROOT / "paper" / "main.tex"
-    check(paper.exists() and paper.stat().st_size > 5_000, "paper/main.tex exists and is substantive", checks)
+    paper = REPORT
+    check(paper.exists() and paper.stat().st_size > 5_000, "report/main.tex exists and is substantive", checks)
     paper_text = paper.read_text(encoding="utf-8")
     check("待补充" not in paper_text and "TODO" not in paper_text, "paper has no placeholders", checks)
 
@@ -87,7 +90,7 @@ def main() -> None:
         "check_count": len(checks),
         "checks": checks,
         "image_details": image_details,
-        "environment_limitations": ["No xelatex/lualatex/tectonic executable was available; paper/main.tex was not compiled."],
+        "environment_limitations": ["No xelatex/lualatex/tectonic executable was available; report/main.tex was not compiled."],
     }
     (RESULTS / "output_validation.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"

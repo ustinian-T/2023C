@@ -6,7 +6,7 @@
 
 > 多季节 STL 去趋势 → 近似 MIC 非线性筛选 → Graphical Lasso 稀疏条件关联网络 → 移动块 Bootstrap 稳定性检验。
 
-除作图脚本 `src/plot_q1_matlab.m` 外，所有数据读取、筛选、分布拟合、模型估计、网络计算和验证均由 Python 的 `src/q1_model.py` 完成。输入直接采用压缩包中的处理后数据，不重复清洗附件。
+除作图脚本 `code/plot_q1_matlab.m` 外，所有数据读取、筛选、分布拟合、模型估计、网络计算和验证均由 Python 的 `code/q1_model.py` 完成。输入直接采用仓库共享的 `data/processed/` 数据，不重复清洗附件。
 
 ## 2. 逻辑链条
 
@@ -28,38 +28,38 @@
 - 六个品类的正销量条件分布均通过 KS 检验：4 类选 Gamma，2 类选 Lognormal。
 - Graphical Lasso 正则强度上下浮动 20% 时最终候选交集不变；MIC 阈值分位是最敏感的参数。
 
-完整数字与来源见 `results/validation_report.md` 和 `results/q1_summary.json`。
+完整数字与来源见 `outputs/results/validation_report.md` 和 `outputs/results/q1_summary.json`。
 
 ## 4. 运行方法
 
 Python 依赖列于 `requirements.txt`。在当前目录运行：
 
 ```powershell
-python src\q1_model.py
+python questions\q1\code\q1_model.py
 ```
 
-该命令会覆盖 `tables/tab_q1_*.csv` 与 `results/q1_*.json`。固定随机种子为 20230907，完整运行约需数分钟。
+该命令会覆盖 `questions/q1/outputs/tables/tab_q1_*.csv` 与 `questions/q1/outputs/results/q1_*.json`。固定随机种子为 20230907，完整运行约需数分钟。
 
 随后用 MATLAB R2023b 或兼容版本绘图：
 
 ```powershell
-matlab -batch "run('src/plot_q1_matlab.m')"
+matlab -batch "run('questions/q1/code/plot_q1_matlab.m')"
 ```
 
 MATLAB 只读取 Python 结果表并绘图，不重新拟合模型。每幅图同时输出 600 dpi PNG 与矢量 PDF。
 
 ## 5. 目录说明
 
-- `src/q1_model.py`：Python 主模型与验证。
-- `src/plot_q1_matlab.m`：MATLAB 学术作图。
+- `code/q1_model.py`：Python 主模型与验证。
+- `code/plot_q1_matlab.m`：MATLAB 学术作图。
 - `modeling/q1_modeling_idea.md`：逐步推导、代码映射和模型边界。
-- `tables/`：筛选、分布、MIC、精度矩阵边、节点、社群与敏感性结果。
-- `figures/`：6 组 PNG/PDF 学术图。
-- `results/q1_summary.json`：机器可读的关键结果。
-- `results/validation_report.md`：结果追踪、验证与局限。
-- `outputs/q1_model/q1_model_results.xlsx`：格式化结果总表；其中数字 SKU 以 `SKU-` 前缀显示，避免 Excel 将标识符转成科学计数法。
-- `paper/main.tex`：Q1 论文式正文。
-- `src/validate_q1_outputs.py`：跨文件一致性校验；本次 38 项检查全部通过。
+- `outputs/tables/`：筛选、分布、MIC、精度矩阵边、节点、社群与敏感性结果。
+- `outputs/figures/`：6 组 PNG/PDF 学术图。
+- `outputs/results/q1_summary.json`：机器可读的关键结果。
+- `outputs/results/validation_report.md`：结果追踪、验证与局限。
+- `outputs/workbooks/q1_model_results.xlsx`：格式化结果总表；其中数字 SKU 以 `SKU-` 前缀显示，避免 Excel 将标识符转成科学计数法。
+- `report/main.tex`：Q1 论文式正文。
+- `code/validate_q1_outputs.py`：跨文件一致性校验；本次 38 项检查全部通过。
 
 ## 6. 模型优点
 
@@ -80,6 +80,6 @@ MATLAB 只读取 Python 结果表并绘图，不重新拟合模型。每幅图�
 
 ## 8. 图形规范
 
-所有主图为白底，坐标与图例字号不低于 12--16 pt，图例和说明位于右上区域；统一使用 `#DDF2F0`、`#D6F6F1`、`#A6EBDD`、`#88C9D0`、`#929ED2`、`#5E8CBE`、`#3E5682`、`#0F1633` 青绿—蓝紫 SCI 色板。彩色电子版同时以实线/虚线/点线、空心圆/上三角/下三角、圆/方/三角/菱形节点、明度、深色边框和数值正负号作冗余编码，使黑白打印不依赖色相仍可辨认；`figures/print_preview/` 保存 MATLAB 自动生成的灰度打印预览。主图 PNG 为 600 dpi，PDF 保留矢量文本。图形已经逐张检查，无明显重叠、截断或工具栏残留。
+所有主图为白底，坐标与图例字号不低于 12--16 pt，图例和说明位于右上区域；统一使用 `#DDF2F0`、`#D6F6F1`、`#A6EBDD`、`#88C9D0`、`#929ED2`、`#5E8CBE`、`#3E5682`、`#0F1633` 青绿—蓝紫 SCI 色板。彩色电子版同时以实线/虚线/点线、空心圆/上三角/下三角、圆/方/三角/菱形节点、明度、深色边框和数值正负号作冗余编码，使黑白打印不依赖色相仍可辨认；`outputs/figures/print_preview/` 保存 MATLAB 自动生成的灰度打印预览。主图 PNG 为 600 dpi，PDF 保留矢量文本。图形已经逐张检查，无明显重叠、截断或工具栏残留。
 
-当前机器未安装 XeLaTeX、LuaLaTeX 或 tectonic，故 `paper/main.tex` 未在本机编译；安装任一支持中文的 TeX 引擎后可直接编译。MATLAB 导出的六组矢量 PDF 图不受此限制。
+当前机器未安装 XeLaTeX、LuaLaTeX 或 tectonic，故 `report/main.tex` 未在本机编译；安装任一支持中文的 TeX 引擎后可直接编译。MATLAB 导出的六组矢量 PDF 图不受此限制。

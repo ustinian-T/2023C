@@ -7,8 +7,9 @@ rng(20230907, 'twister');
 
 scriptPath = mfilename('fullpath');
 rootDir = fileparts(fileparts(scriptPath));
-tableDir = fullfile(rootDir, 'tables');
-figureDir = fullfile(rootDir, 'figures');
+outputDir = fullfile(rootDir, 'outputs');
+tableDir = fullfile(outputDir, 'tables');
+figureDir = fullfile(outputDir, 'figures');
 if ~exist(figureDir, 'dir'), mkdir(figureDir); end
 
 fontName = 'Microsoft YaHei';

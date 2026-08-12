@@ -12,16 +12,16 @@
 
 | 结论 | 数值 | 直接证据 |
 | --- | ---: | --- |
-| 全部/入选单品数 | 251 / 47 | `tables/tab_q1_sku_activity_filter.csv` |
-| 单品公共建模窗口 | 2021-01-30 至 2022-09-08，共 587 天 | `results/q1_summary.json` |
-| 参数分布接受/KDE 回退对象数 | 30 / 23 | `tables/tab_q1_distribution_summary.csv` |
-| 单品 MIC 99% 阈值/候选边数 | 0.7071 / 18 | `results/q1_summary.json`、`tables/tab_q1_sku_pair_measures.csv` |
-| 单品 Graphical Lasso 最优正则强度 | 0.1137 | `tables/tab_q1_sku_alpha_path.csv` |
-| 精度矩阵最小特征值 | 0.1598 | `results/q1_summary.json` |
-| 单品 Bootstrap 成功数 | 100 / 100 | `results/q1_summary.json` |
-| 最终单品稳定边 | 10 条：6 正、4 负 | `tables/tab_q1_sku_network_edges.csv` |
-| 连通/孤立单品节点 | 12 / 35 | `tables/tab_q1_sku_node_metrics.csv` |
-| 品类层最终稳定边 | 2 条，均为正边 | `tables/tab_q1_category_network_edges.csv` |
+| 全部/入选单品数 | 251 / 47 | `outputs/tables/tab_q1_sku_activity_filter.csv` |
+| 单品公共建模窗口 | 2021-01-30 至 2022-09-08，共 587 天 | `outputs/results/q1_summary.json` |
+| 参数分布接受/KDE 回退对象数 | 30 / 23 | `outputs/tables/tab_q1_distribution_summary.csv` |
+| 单品 MIC 99% 阈值/候选边数 | 0.7071 / 18 | `outputs/results/q1_summary.json`、`outputs/tables/tab_q1_sku_pair_measures.csv` |
+| 单品 Graphical Lasso 最优正则强度 | 0.1137 | `outputs/tables/tab_q1_sku_alpha_path.csv` |
+| 精度矩阵最小特征值 | 0.1598 | `outputs/results/q1_summary.json` |
+| 单品 Bootstrap 成功数 | 100 / 100 | `outputs/results/q1_summary.json` |
+| 最终单品稳定边 | 10 条：6 正、4 负 | `outputs/tables/tab_q1_sku_network_edges.csv` |
+| 连通/孤立单品节点 | 12 / 35 | `outputs/tables/tab_q1_sku_node_metrics.csv` |
+| 品类层最终稳定边 | 2 条，均为正边 | `outputs/tables/tab_q1_category_network_edges.csv` |
 
 六品类正销量条件分布中，水生根茎类、花叶类、花菜类和茄类的 AIC 最优分布为 Gamma；辣椒类和食用菌为 Lognormal，且六个品类的 KS 检验均未在 5% 水平拒绝。47 个入选单品中 24 个接受参数分布，23 个回退为 KDE，说明单品分布异质性明显。
 
@@ -31,15 +31,15 @@
 
 ### 3.1 基线比较
 
-按与最终网络相同边数截取原始销量 Spearman 强边，和最终稳定边的 Jaccard 为 0。该结果表明：原始销量的强相关主要受共同季节、趋势或全局经营节奏影响；去除时间结构并控制其他商品后，保留下来的直接条件关联完全不同。证据见 `tables/tab_q1_sku_baseline_comparison.csv`。
+按与最终网络相同边数截取原始销量 Spearman 强边，和最终稳定边的 Jaccard 为 0。该结果表明：原始销量的强相关主要受共同季节、趋势或全局经营节奏影响；去除时间结构并控制其他商品后，保留下来的直接条件关联完全不同。证据见 `outputs/tables/tab_q1_sku_baseline_comparison.csv`。
 
 ### 3.2 MIC 零分布
 
-MIC 采用平均秩处理并列零值，避免把时间先后顺序编码为虚假非线性。零分布通过随机循环移位构造，在保留各序列自相关的同时破坏同期对齐。单品层 2000 个替代得分的 99% 分位为 0.7071，最终 18 对超过阈值。证据见 `tables/tab_q1_sku_mic_null.csv` 和 `figures/fig_q1_mic_graphical_lasso.png`。
+MIC 采用平均秩处理并列零值，避免把时间先后顺序编码为虚假非线性。零分布通过随机循环移位构造，在保留各序列自相关的同时破坏同期对齐。单品层 2000 个替代得分的 99% 分位为 0.7071，最终 18 对超过阈值。证据见 `outputs/tables/tab_q1_sku_mic_null.csv` 和 `outputs/figures/fig_q1_mic_graphical_lasso.png`。
 
 ### 3.3 Graphical Lasso 与正定性
 
-EBIC 在正则强度 0.1137 处最小；对应精度矩阵最小特征值为 0.1598，大于 0，满足正定要求。正则路径见 `tables/tab_q1_sku_alpha_path.csv` 与 `figures/fig_q1_robustness.png`。
+EBIC 在正则强度 0.1137 处最小；对应精度矩阵最小特征值为 0.1598，大于 0，满足正定要求。正则路径见 `outputs/tables/tab_q1_sku_alpha_path.csv` 与 `outputs/figures/fig_q1_robustness.png`。
 
 ### 3.4 时间块 Bootstrap
 
@@ -51,7 +51,7 @@ EBIC 在正则强度 0.1137 处最小；对应精度矩阵最小特征值为 0.1
 - MIC 零分布分位由 0.990 调到 0.975 时边数为 15，调到 0.995 时为 3；MIC 阈值是当前结论最敏感的参数，论文应报告此点。
 - 品类层在 0.975 分位时得到 5 条边，在 0.990 与 0.995 时均为 2 条；第二条较弱品类边的 Bootstrap 稳定率为 75.5%，不宜过度强调。
 
-证据见 `tables/tab_q1_sku_sensitivity.csv` 与 `tables/tab_q1_category_sensitivity.csv`。
+证据见 `outputs/tables/tab_q1_sku_sensitivity.csv` 与 `outputs/tables/tab_q1_category_sensitivity.csv`。
 
 ## 4. 官方 benchmark 对照
 
@@ -69,4 +69,4 @@ EBIC 在正则强度 0.1137 处最小；对应精度矩阵最小特征值为 0.1
 
 ## 6. 交付文件自动校验
 
-`src/validate_q1_outputs.py` 已执行，38 项跨文件检查全部通过，报告保存于 `results/output_validation.json`。检查覆盖边数与符号、MIC/Bootstrap 阈值、正定性、敏感性、六组 PNG/PDF 成对导出、PNG 尺寸、XLSX 容器完整性和论文占位符。当前环境未安装 XeLaTeX、LuaLaTeX 或 tectonic，因此 `paper/main.tex` 尚未在本机编译成 PDF；这是唯一记录的环境限制。
+`code/validate_q1_outputs.py` 已执行，38 项跨文件检查全部通过，报告保存于 `outputs/results/output_validation.json`。检查覆盖边数与符号、MIC/Bootstrap 阈值、正定性、敏感性、六组 PNG/PDF 成对导出、PNG 尺寸、XLSX 容器完整性和论文占位符。当前环境未安装 XeLaTeX、LuaLaTeX 或 tectonic，因此 `report/main.tex` 尚未在本机编译成 PDF；这是唯一记录的环境限制。

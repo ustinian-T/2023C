@@ -147,7 +147,7 @@
       "passed": true
     },
     {
-      "check": "paper/main.tex exists and is substantive",
+      "check": "report/main.tex exists and is substantive",
       "passed": true
     },
     {
@@ -212,6 +212,6 @@
     }
   ],
   "environment_limitations": [
-    "No xelatex/lualatex/tectonic executable was available; paper/main.tex was not compiled."
+    "No xelatex/lualatex/tectonic executable was available; report/main.tex was not compiled."
   ]
 }

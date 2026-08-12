@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Q1: MSTL detrending -> approximate MIC screening -> Graphical Lasso network.
 
-All numerical modeling is implemented in Python.  Plotting is intentionally
-delegated to ``src/plot_q1_matlab.m`` as requested by the user.
+All numerical modeling is implemented in Python. Plotting is delegated to
+``code/plot_q1_matlab.m``.
 """
 
 from __future__ import annotations
@@ -68,13 +68,15 @@ def find_input_dir(root: Path, supplied: Path | None) -> Path:
         if not (candidate / "processed_daily_sku.csv").exists():
             raise FileNotFoundError(f"Missing processed_daily_sku.csv in {candidate}")
         return candidate
-    candidates = sorted(
-        {p.parent.resolve() for p in root.glob("*/processed_daily_sku.csv")},
-        key=lambda p: (not (p / "summary.json").exists(), len(str(p))),
-    )
-    if not candidates:
-        raise FileNotFoundError("No processed_daily_sku.csv found one level below project root")
-    return candidates[0]
+    repository_root = root.parents[1]
+    candidate = repository_root / "data" / "processed"
+    required = ("processed_daily_sku.csv", "processed_daily_category.csv")
+    missing = [name for name in required if not (candidate / name).exists()]
+    if missing:
+        raise FileNotFoundError(
+            f"Missing {', '.join(missing)} in shared data directory {candidate}"
+        )
+    return candidate
 
 
 def write_csv(df: pd.DataFrame, path: Path) -> None:
@@ -877,8 +879,9 @@ def main() -> None:
     args = parse_args()
     root = args.root.resolve()
     cfg = Config()
-    tables = root / "tables"
-    results = root / "results"
+    outputs = root / "outputs"
+    tables = outputs / "tables"
+    results = outputs / "results"
     tables.mkdir(parents=True, exist_ok=True)
     results.mkdir(parents=True, exist_ok=True)
     input_dir = find_input_dir(root, args.input_dir)
