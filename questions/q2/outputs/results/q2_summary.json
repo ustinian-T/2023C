@@ -1,0 +1,97 @@
+{
+  "model": "cross-fitted semi-parametric conditional price response + empirical pooled-elasticity fallback + aligned-lag GBDT/seasonal blend + joint moving-block scenarios + weekly mean-lower-tail optimization + goodwill cost/reference regularization",
+  "forecast_dates": [
+    "2023-07-01",
+    "2023-07-02",
+    "2023-07-03",
+    "2023-07-04",
+    "2023-07-05",
+    "2023-07-06",
+    "2023-07-07"
+  ],
+  "categories": [
+    "水生根茎类",
+    "花叶类",
+    "花菜类",
+    "茄类",
+    "辣椒类",
+    "食用菌"
+  ],
+  "random_seed": 20230907,
+  "scenario": {
+    "residual_pool_days": 865,
+    "valid_7day_blocks": 859,
+    "scenario_count": 600,
+    "max_abs_cross_category_corr_difference": 0.06881407107399207,
+    "max_abs_joint_demand_cost_corr_difference": 0.06881407107399123
+  },
+  "risk": {
+    "lower_tail_probability": 0.1,
+    "main_risk_weight": 0.25
+  },
+  "penalty_parameters": {
+    "goodwill_cost_ratio": 0.1,
+    "reference_penalty_weight": 80.0,
+    "pooled_elasticity_fallback_enabled": true,
+    "categories_with_pooled_fallback": 2
+  },
+  "forecast_metrics": {
+    "demand_weighted_wape": 0.358849784930296,
+    "seasonal_naive_weighted_wape": 0.39850369993983886,
+    "cost_weighted_wape": 0.15282047420040587,
+    "cost_naive_weighted_wape": 0.15807615154455198,
+    "mean_80pct_coverage": 0.7435897435897436
+  },
+  "main_strategy": {
+    "weekly_replenishment_kg": 2048.3280712792316,
+    "weekly_expected_sales_kg": 1686.7759178117014,
+    "weekly_expected_profit_yuan": 4850.296744320931,
+    "weekly_worst10pct_mean_profit_yuan": 1486.0331813577184,
+    "weekly_expected_service_adjusted_profit_yuan": 4515.651276341094,
+    "weekly_worst10pct_service_adjusted_profit_yuan": 648.6778939811139,
+    "weekly_expected_regularized_profit_yuan": 4169.4815047812435,
+    "weekly_worst10pct_regularized_profit_yuan": 302.508122421264,
+    "reference_penalty_yuan": 346.16977155985,
+    "weekly_risk_adjusted_objective": 3202.7381591912485,
+    "mean_markup_rate": 0.8925362242327607,
+    "price_range_yuan_per_kg": [
+      5.490127787494372,
+      21.24953726581162
+    ],
+    "replenishment_range_kg": [
+      7.1412575876081235,
+      156.6422095186612
+    ],
+    "mean_stockout_probability": 0.6108730158730158,
+    "expected_profit_improvement_vs_baseline": 0.815853510585894,
+    "tail_profit_change_yuan_vs_baseline": 2186.1363209281053,
+    "service_adjusted_profit_improvement_vs_baseline": 0.8409196841233788
+  },
+  "baseline": {
+    "weekly_expected_profit_yuan": 2671.0837168555295,
+    "weekly_worst10pct_mean_profit_yuan": -700.1031395703872,
+    "weekly_expected_service_adjusted_profit_yuan": 2452.9322573305994,
+    "weekly_worst10pct_service_adjusted_profit_yuan": -1100.4500933716981,
+    "weekly_expected_regularized_profit_yuan": 2452.9322573305994,
+    "weekly_worst10pct_regularized_profit_yuan": -1100.4500933716981
+  },
+  "risk_neutral": {
+    "weekly_expected_profit_yuan": 4857.622624415713,
+    "weekly_worst10pct_mean_profit_yuan": 1332.5417732017745,
+    "weekly_expected_regularized_profit_yuan": 4184.895132494462,
+    "weekly_worst10pct_regularized_profit_yuan": 205.01435338212116
+  },
+  "high_risk_aversion": {
+    "weekly_expected_profit_yuan": 4792.9479750873825,
+    "weekly_worst10pct_mean_profit_yuan": 1676.7931197717953,
+    "weekly_expected_regularized_profit_yuan": 4098.129149510402,
+    "weekly_worst10pct_regularized_profit_yuan": 413.86687844981503
+  },
+  "checks": {
+    "constraint_max_violation": 0.0,
+    "markup_change_max_violation": 2.3009102789739444e-08,
+    "main_two_seed_max_relative_gap": 1.676175924468988e-08,
+    "all_numeric_finite": true,
+    "rows_in_main_strategy": 42
+  }
+}

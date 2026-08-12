@@ -1,0 +1,4 @@
+﻿risk_weight,scope,de_all_success,slsqp_success,slsqp_message,initial_objective,best_objective,two_seed_relative_gap,max_bound_violation,max_markup_change_violation
+0.0,weekly_joint,False,True,Optimization terminated successfully,4181.934228196686,4184.895132494462,0.0,0.0,2.3009102789739444e-08
+0.25,weekly_joint,False,True,Optimization terminated successfully,3175.830112416036,3202.7381591912485,1.676175924468988e-08,0.0,8.417033237062554e-09
+0.5,weekly_joint,False,True,Optimization terminated successfully,2178.2526793902907,2255.9980139801087,0.0,0.0,6.580335554229322e-09
