@@ -1,6 +1,7 @@
 # Local packaging and temporary files
 2023CQ1.zip
 tmp/
+.worktrees/
 
 # Unrelated source materials in the shared workspace
 C题/
