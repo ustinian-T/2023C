@@ -50,29 +50,29 @@ fig = figure('Position', [80 60 1500 1050]);
 tl = tiledlayout(fig, 4, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
 
 ax = nexttile(tl);
-plot(ax, T.date, T.sales_qty_kg, 'Color', blue);
+plot(ax, T.date, T.sales_qty_kg, '-', 'Color', blue, 'LineWidth', 1.8);
 ylabel(ax, '日销量/kg', 'FontSize', 15);
 title(ax, sprintf('%s：原始日销量', itemName), 'FontSize', 17, 'FontWeight', 'bold');
 legend(ax, '原始销量', 'Location', 'northeast', 'FontSize', 13, 'Box', 'off');
 grid(ax, 'on');
 
 ax = nexttile(tl);
-plot(ax, T.date, T.log_sales, 'Color', lavender, 'LineWidth', 1.1); hold(ax, 'on');
-plot(ax, T.date, T.trend, 'Color', navy, 'LineWidth', 2.2);
+plot(ax, T.date, T.log_sales, '-', 'Color', lavender, 'LineWidth', 1.1); hold(ax, 'on');
+plot(ax, T.date, T.trend, '--', 'Color', navy, 'LineWidth', 2.4);
 ylabel(ax, 'log(1+销量)', 'FontSize', 15);
 legend(ax, {'变换后销量', '长期趋势'}, 'Location', 'northeast', 'FontSize', 13, 'Box', 'off');
 grid(ax, 'on');
 
 ax = nexttile(tl);
-plot(ax, T.date, T.seasonal_7, 'Color', blue); hold(ax, 'on');
-plot(ax, T.date, T.seasonal_365, 'Color', teal);
+plot(ax, T.date, T.seasonal_7, '-', 'Color', blue, 'LineWidth', 1.8); hold(ax, 'on');
+plot(ax, T.date, T.seasonal_365, '--', 'Color', navy, 'LineWidth', 2.0);
 ylabel(ax, '季节分量', 'FontSize', 15);
 legend(ax, {'7 日周期', '365 日周期'}, 'Location', 'northeast', 'FontSize', 13, 'Box', 'off');
 grid(ax, 'on');
 
 ax = nexttile(tl);
-plot(ax, T.date, T.residual, 'Color', dark, 'LineWidth', 1.2); hold(ax, 'on');
-yline(ax, 0, '--', 'Color', teal, 'LineWidth', 1.1);
+plot(ax, T.date, T.residual, '-', 'Color', dark, 'LineWidth', 1.4); hold(ax, 'on');
+yline(ax, 0, ':', 'Color', blue, 'LineWidth', 1.5);
 xlabel(ax, '日期', 'FontSize', 15);
 ylabel(ax, '残差销量', 'FontSize', 15);
 legend(ax, {'最终残差', '零基线'}, 'Location', 'northeast', 'FontSize', 13, 'Box', 'off');
@@ -101,14 +101,14 @@ for k = 1:numel(categoryNames)
     x = C.(name);
     x = x(isfinite(x) & x > 0);
     histogram(ax, x, 24, 'Normalization', 'pdf', 'FaceColor', teal, ...
-        'FaceAlpha', 0.65, 'EdgeColor', iceMint); hold(ax, 'on');
+        'FaceAlpha', 0.65, 'EdgeColor', navy, 'LineWidth', 0.55); hold(ax, 'on');
     srow = D(D.level == "category" & D.item_name == name, :);
     best = srow.best_distribution(1);
     frow = F(F.level == "category" & F.item_name == name & F.distribution == best, :);
     xmax = prctile(x, 99.5);
     xx = linspace(max(0, min(x)), xmax, 400);
     yy = distributionPdf(xx, best, frow.parameter_1(1), frow.parameter_2(1));
-    plot(ax, xx, yy, 'Color', navy, 'LineWidth', 2.4);
+    plot(ax, xx, yy, '-', 'Color', navy, 'LineWidth', 2.6);
     xlim(ax, [0 xmax]);
     xlabel(ax, '正销量/kg', 'FontSize', 14);
     ylabel(ax, '概率密度', 'FontSize', 14);
@@ -138,15 +138,16 @@ micThreshold = min(P.mic_approx(candidateMask));
 fig = figure('Position', [120 80 1250 900]);
 ax = axes(fig); hold(ax, 'on');
 scatter(ax, P.mic_approx, P.partial_corr, 20, paleMint, 'filled', ...
-    'MarkerFaceAlpha', 0.42, 'DisplayName', '全部商品对');
+    'MarkerEdgeColor', lavender, 'MarkerFaceAlpha', 0.38, ...
+    'MarkerEdgeAlpha', 0.50, 'DisplayName', '全部商品对');
 scatter(ax, P.mic_approx(candidateMask & ~finalMask), ...
-    P.partial_corr(candidateMask & ~finalMask), 44, lavender, 'o', ...
-    'LineWidth', 1.2, 'DisplayName', '仅通过 MIC');
+    P.partial_corr(candidateMask & ~finalMask), 52, 'o', ...
+    'MarkerEdgeColor', navy, 'LineWidth', 1.5, 'DisplayName', '仅通过 MIC');
 scatter(ax, P.mic_approx(positiveMask), P.partial_corr(positiveMask), ...
-    85, mint, '^', 'filled', 'MarkerEdgeColor', navy, ...
+    95, mint, '^', 'filled', 'MarkerEdgeColor', dark, 'LineWidth', 1.0, ...
     'DisplayName', '稳定正边');
 scatter(ax, P.mic_approx(negativeMask), P.partial_corr(negativeMask), ...
-    85, blue, 'v', 'filled', 'MarkerEdgeColor', dark, ...
+    95, dark, 'v', 'filled', 'MarkerEdgeColor', dark, 'LineWidth', 1.0, ...
     'DisplayName', '稳定负边');
 xline(ax, micThreshold, '--', 'MIC 99% 阈值', 'Color', dark, ...
     'LabelOrientation', 'horizontal', 'LabelVerticalAlignment', 'bottom', ...
@@ -176,23 +177,37 @@ G = addedge(G, cellstr(string(E.source_code)), cellstr(string(E.target_code)), a
 [categoryList, ~, categoryIndex] = unique(connected.category_name, 'stable');
 palette = [iceMint; mint; teal; lavender; blue; navy];
 palette = palette(1:numel(categoryList), :);
+categoryMarkers = {'o', 's', '^', 'd', 'v', '>'};
 
 fig = figure('Position', [90 50 1450 980]);
 ax = axes(fig); hold(ax, 'on');
 gp = plot(ax, G, 'Layout', 'force', 'Iterations', 120, ...
-    'NodeCData', categoryIndex, 'MarkerSize', 9, ...
+    'NodeCData', categoryIndex, 'MarkerSize', 0.1, ...
     'NodeLabel', connected.item_name, 'NodeFontSize', 12, ...
     'NodeFontName', fontName);
 xSpan = max(gp.XData) - min(gp.XData);
 ySpan = max(gp.YData) - min(gp.YData);
 gp.LineWidth = 1.5;
-gp.EdgeColor = paleMint;
+gp.EdgeColor = 'none';
 edgeWidths = 1.2 + 4.5*rescale(abs(E.partial_corr));
 for r = 1:height(E)
-    edgeColor = dark;
-    if E.partial_corr(r) > 0, edgeColor = teal; end
-    highlight(gp, string(E.source_code(r)), string(E.target_code(r)), ...
-        'EdgeColor', edgeColor, 'LineWidth', edgeWidths(r));
+    sourceIdx = find(string(G.Nodes.Name) == string(E.source_code(r)), 1);
+    targetIdx = find(string(G.Nodes.Name) == string(E.target_code(r)), 1);
+    edgeColor = dark; edgeStyle = '--';
+    if E.partial_corr(r) > 0
+        edgeColor = teal; edgeStyle = '-';
+    end
+    plot(ax, gp.XData([sourceIdx targetIdx]), gp.YData([sourceIdx targetIdx]), ...
+        edgeStyle, 'Color', edgeColor, 'LineWidth', edgeWidths(r), ...
+        'HandleVisibility', 'off');
+end
+uistack(gp, 'top');
+for k = 1:numel(categoryList)
+    nodeMask = categoryIndex == k;
+    scatter(ax, gp.XData(nodeMask), gp.YData(nodeMask), 95, ...
+        categoryMarkers{k}, 'filled', 'MarkerFaceColor', palette(k,:), ...
+        'MarkerEdgeColor', dark, 'LineWidth', 0.8, ...
+        'HandleVisibility', 'off');
 end
 % Apply layout padding after all highlight calls because GraphPlot can restore
 % automatic limits while edge styles are updated.
@@ -206,11 +221,13 @@ title(ax, '高活跃单品的稳定稀疏条件关联网络', 'FontSize', 20, 'F
 h = gobjects(numel(categoryList) + 2, 1);
 labels = strings(numel(categoryList) + 2, 1);
 for k = 1:numel(categoryList)
-    h(k) = scatter(ax, nan, nan, 90, palette(k,:), 'filled');
+    h(k) = scatter(ax, nan, nan, 90, categoryMarkers{k}, 'filled', ...
+        'MarkerFaceColor', palette(k,:), 'MarkerEdgeColor', dark, ...
+        'LineWidth', 0.8);
     labels(k) = categoryList(k);
 end
-h(end-1) = plot(ax, nan, nan, '-', 'Color', teal, 'LineWidth', 2.6);
-h(end) = plot(ax, nan, nan, '-', 'Color', dark, 'LineWidth', 2.6);
+h(end-1) = plot(ax, nan, nan, '-', 'Color', teal, 'LineWidth', 2.8);
+h(end) = plot(ax, nan, nan, '--', 'Color', dark, 'LineWidth', 2.8);
 labels(end-1:end) = ["潜在互补/同步", "潜在替代"];
 lg = legend(ax, h, labels, 'Location', 'northeast', 'FontSize', 11, 'Box', 'on');
 lg.Position = [0.76 0.43 0.21 0.31];
@@ -289,7 +306,7 @@ grid(ax, 'on');
 ax = nexttile(tl); hold(ax, 'on');
 stableCandidate = candidateMask & asLogical(P.graphical_lasso_edge);
 histogram(ax, P.bootstrap_same_sign_rate(stableCandidate), 0:0.05:1, ...
-    'FaceColor', teal, 'FaceAlpha', 0.78, 'EdgeColor', iceMint, ...
+    'FaceColor', teal, 'FaceAlpha', 0.78, 'EdgeColor', navy, 'LineWidth', 0.8, ...
     'DisplayName', '候选边同号稳定率');
 xline(ax, 0.70, '--', '70% 门槛', 'Color', dark, 'LineWidth', 1.6, ...
     'FontSize', 13, 'LabelVerticalAlignment', 'bottom', 'HandleVisibility', 'off');
@@ -350,4 +367,15 @@ function exportAcademic(fig, figureDir, baseName)
     pdfPath = fullfile(figureDir, baseName + ".pdf");
     exportgraphics(fig, pngPath, 'Resolution', 600, 'BackgroundColor', 'white');
     exportgraphics(fig, pdfPath, 'ContentType', 'vector', 'BackgroundColor', 'white');
+
+    % MATLAB-only grayscale simulation for paper-print QA.  The main figure
+    % remains the color PNG/PDF; this preview verifies luminance, line-style,
+    % marker-shape and annotation discrimination without changing the data.
+    previewDir = fullfile(figureDir, 'print_preview');
+    if ~exist(previewDir, 'dir'), mkdir(previewDir); end
+    colorImage = imread(pngPath);
+    grayImage = rgb2gray(colorImage);
+    previewPath = fullfile(previewDir, baseName + "_bw_preview.png");
+    imwrite(grayImage, previewPath, 'ResolutionUnit', 'meter', ...
+        'XResolution', 23622, 'YResolution', 23622);
 end
