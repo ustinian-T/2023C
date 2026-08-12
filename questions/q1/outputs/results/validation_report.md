@@ -60,4 +60,4 @@ python questions\q1\code\validate_q1_outputs.py
 matlab -batch "run('questions/q1/code/plot_q1_matlab.m')"
 ```
 
-正式图件保持彩色PNG/PDF；`outputs/figures/print_preview/` 仅保存灰度打印预览，用于检查线型、点型和文字区分度。
+正式图件精简为 6 组彩色 PNG/PDF，仅保留能够直接支撑论文结论的分布、季节、聚类与关系图；`outputs/figures/print_preview/` 仅保存对应灰度打印预览，用于检查线型、点型、明度和文字区分度。

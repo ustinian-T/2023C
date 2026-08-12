@@ -71,7 +71,7 @@ python questions\q1\code\validate_q1_outputs.py
 - `code/q1_model_legacy_appendix.py`：旧版 MIC + Graphical Lasso 附录对照。
 - `modeling/q1_modeling_idea.md`：逐步推导与模型边界。
 - `outputs/tables/`：聚类、关系、分布等结果表格。
-- `outputs/figures/`：MATLAB 生成的学术图（PNG + PDF）。
+- `outputs/figures/`：MATLAB 生成的 6 组论文级学术图（PNG + PDF）；采用箱线散点、季节曲线、指标矩阵、画像热图、分层关系矩阵和置信区间点图，避免重复柱状图与折线图。
 - `outputs/results/`：机器摘要与验证报告。
 - `report/main.tex`：论文正文。
 

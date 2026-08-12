@@ -192,12 +192,11 @@ def main() -> None:
 
     # ---- Figure existence (requires MATLAB; skip if not generated) ----
     figure_bases = [
-        "fig_q1_category_distributions",
+        "fig_q1_category_distribution_box",
         "fig_q1_seasonal_index_curves",
-        "fig_q1_k_selection",
-        "fig_q1_cluster_profiles",
-        "fig_q1_category_relationships",
-        "fig_q1_cluster_relationships",
+        "fig_q1_k_selection_matrix",
+        "fig_q1_cluster_profile_heatmaps",
+        "fig_q1_hierarchical_relationships",
         "fig_q1_representative_pairs",
     ]
     for base in figure_bases:
