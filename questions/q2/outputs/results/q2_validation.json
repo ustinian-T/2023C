@@ -1,0 +1,116 @@
+{
+  "passed": 22,
+  "total": 22,
+  "tests": [
+    {
+      "name": "42 category-day decisions",
+      "status": "PASS",
+      "details": "42"
+    },
+    {
+      "name": "7 forecast dates",
+      "status": "PASS",
+      "details": "7"
+    },
+    {
+      "name": "6 categories",
+      "status": "PASS",
+      "details": "6"
+    },
+    {
+      "name": "3 weekly risk solutions",
+      "status": "PASS",
+      "details": "3"
+    },
+    {
+      "name": "all finite",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "positive prices",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "nonnegative replenishment",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "price-cost identity",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "markup bounds",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "replenishment bounds",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "first-day and interday markup smoothing",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "economic monotonicity",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "forecast rows complete",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "zero optimizer bound violation",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "zero material markup-change violation",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "SLSQP converged",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "two-seed main stability",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "joint demand-cost scenario correlation preserved",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "weekly expected profit equals daily expected-profit sum",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "weekly tail is evaluated after seven-day aggregation",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "summary uses joint weekly tail",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "risk tradeoff direction",
+      "status": "PASS",
+      "details": ""
+    }
+  ]
+}
