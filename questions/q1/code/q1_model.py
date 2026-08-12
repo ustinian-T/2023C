@@ -971,7 +971,11 @@ def main() -> None:
 
     summary = {
         "model": "MSTL(7,365) -> approximate MIC circular-shift null screen -> EBIC Graphical Lasso -> moving-block bootstrap",
-        "input_directory": input_dir.name,
+        "input_directory": (
+            str(input_dir.relative_to(root.parents[1])).replace("\\", "/")
+            if input_dir.is_relative_to(root.parents[1])
+            else str(input_dir)
+        ),
         "config": asdict(cfg),
         "integrity": integrity,
         "all_sku_count": int(activity.shape[0]),

@@ -1,6 +1,6 @@
 {
   "model": "MSTL(7,365) -> approximate MIC circular-shift null screen -> EBIC Graphical Lasso -> moving-block bootstrap",
-  "input_directory": "蔬菜数据预处理结果包",
+  "input_directory": "data/processed",
   "config": {
     "random_seed": 20230907,
     "min_span_days": 730,
