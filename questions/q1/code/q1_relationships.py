@@ -144,6 +144,7 @@ def seasonal_sales_correlation(
     use_bootstrap: bool = True,
     bootstrap_reps: int = 200,
     seed: int = 20230907,
+    bootstrap_min_abs_r: float | None = None,
 ) -> pd.DataFrame:
     """Spearman correlation of detrended log1p daily sales, optionally by season.
 
@@ -189,8 +190,13 @@ def seasonal_sales_correlation(
 
         r, p = stats.spearmanr(x, y)
 
-        ci = {"estimate": float(r), "ci_lower": float(r), "ci_upper": float(r), "n_valid_blocks": 0}
-        if use_bootstrap and len(x) >= 14:
+        ci = {"estimate": float(r), "ci_lower": np.nan, "ci_upper": np.nan, "n_valid_blocks": 0}
+        should_bootstrap = (
+            use_bootstrap
+            and len(x) >= 14
+            and (bootstrap_min_abs_r is None or abs(r) >= bootstrap_min_abs_r)
+        )
+        if should_bootstrap:
             ci = _block_bootstrap_ci(x, y, spearman_func, block_length=7, reps=bootstrap_reps, seed=seed)
 
         rows.append({
@@ -218,6 +224,7 @@ def sales_share_correlation(
     use_bootstrap: bool = True,
     bootstrap_reps: int = 200,
     seed: int = 20230907,
+    bootstrap_min_abs_r: float | None = None,
 ) -> pd.DataFrame:
     """Spearman correlation of daily sales share (entity / daily total), by season.
 
@@ -228,7 +235,8 @@ def sales_share_correlation(
     daily = daily.copy()
     daily.index = pd.to_datetime(daily.index)
     row_total = daily.sum(axis=1)
-    shares = daily.div(row_total.replace(0, np.nan), axis=0).fillna(0.0)
+    shares = daily.div(row_total.replace(0, np.nan), axis=0)
+    shares = shares.where(daily.notna())
 
     if season:
         months = [m for m, s in MONTH_TO_SEASON.items() if s == season]
@@ -256,8 +264,13 @@ def sales_share_correlation(
 
         r, p = stats.spearmanr(x, y)
 
-        ci = {"estimate": float(r), "ci_lower": float(r), "ci_upper": float(r), "n_valid_blocks": 0}
-        if use_bootstrap and len(x) >= 14:
+        ci = {"estimate": float(r), "ci_lower": np.nan, "ci_upper": np.nan, "n_valid_blocks": 0}
+        should_bootstrap = (
+            use_bootstrap
+            and len(x) >= 14
+            and (bootstrap_min_abs_r is None or abs(r) >= bootstrap_min_abs_r)
+        )
+        if should_bootstrap:
             ci = _block_bootstrap_ci(x, y, spearman_func, block_length=7, reps=bootstrap_reps, seed=seed)
 
         rows.append({
@@ -292,8 +305,9 @@ def active_day_jaccard(daily: pd.DataFrame) -> pd.DataFrame:
     rows = []
 
     for i, j in combinations(range(len(columns)), 2):
-        a = active.iloc[:, i].to_numpy(dtype=int)
-        b = active.iloc[:, j].to_numpy(dtype=int)
+        valid = daily.iloc[:, i].notna().to_numpy() & daily.iloc[:, j].notna().to_numpy()
+        a = active.iloc[:, i].to_numpy(dtype=int)[valid]
+        b = active.iloc[:, j].to_numpy(dtype=int)[valid]
         intersection = int(np.sum(a & b))
         union = int(np.sum(a | b))
         jaccard = intersection / union if union > 0 else 0.0
@@ -385,6 +399,7 @@ def compute_entity_relationships(
     bootstrap_reps: int = 200,
     seed: int = 20230907,
     bootstrap_only_full_year: bool = True,
+    bootstrap_min_abs_r: float | None = None,
 ) -> pd.DataFrame:
     """Compute all four relationship indicators for a set of entities.
 
@@ -425,14 +440,16 @@ def compute_entity_relationships(
         )
         s_df = seasonal_sales_correlation(
             daily, season=season, use_bootstrap=use_bs,
-            bootstrap_reps=bootstrap_reps, seed=seed
+            bootstrap_reps=bootstrap_reps, seed=seed,
+            bootstrap_min_abs_r=bootstrap_min_abs_r,
         )
         if not s_df.empty:
             sales_rows.append(s_df)
 
         sh_df = sales_share_correlation(
             daily, season=season, use_bootstrap=use_bs,
-            bootstrap_reps=bootstrap_reps, seed=seed
+            bootstrap_reps=bootstrap_reps, seed=seed,
+            bootstrap_min_abs_r=bootstrap_min_abs_r,
         )
         if not sh_df.empty:
             share_rows.append(sh_df)

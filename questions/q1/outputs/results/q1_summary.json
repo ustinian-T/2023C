@@ -13,7 +13,8 @@
     "k_bootstrap_reps": 100,
     "relationship_bootstrap_reps": 200,
     "bootstrap_block_length": 7,
-    "bootstrap_only_full_year": true
+    "bootstrap_only_full_year": false,
+    "sku_bootstrap_min_abs_r": 0.3
   },
   "integrity": {
     "dup_sku_day_keys": 0,
@@ -35,21 +36,22 @@
   },
   "clustering": {
     "k_selected": 5,
-    "silhouette": 0.23509852680216503,
-    "calinski_harabasz": 13.018369383490658,
-    "davies_bouldin": 1.502386670042182,
-    "bootstrap_ari_mean": 0.8266529205715577,
-    "cluster_sizes": "[5, 6, 7, 17, 29]",
+    "silhouette": 0.2329006128501009,
+    "calinski_harabasz": 15.787909989306991,
+    "davies_bouldin": 1.4751940577953158,
+    "bootstrap_ari_mean": 0.5663861875216032,
+    "cluster_sizes": "[7, 8, 11, 17, 21]",
     "cluster_names": [
-      "夏秋型",
+      "初夏型",
+      "冬季型",
       "常年型",
       "春季型",
-      "夏秋型",
-      "冬季型"
+      "夏秋型"
     ]
   },
   "relationships": {
     "category_pairs": 15,
+    "all_sku_pairs": 2016,
     "within_category_categories": [
       "水生根茎类",
       "花叶类",
@@ -60,11 +62,11 @@
     ],
     "cluster_pairs": 10,
     "within_cluster_ids": [
-      4,
-      2,
-      1,
       0,
-      3
+      1,
+      2,
+      3,
+      4
     ]
   }
 }

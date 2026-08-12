@@ -27,11 +27,6 @@ MONTH_TO_SEASON: dict[int, str] = {
 SEASON_ORDER = ["春季", "夏季", "秋季", "冬季"]
 MONTH_ORDER = list(range(1, 13))
 
-# Days in each month (non-leap year)
-DAYS_IN_MONTH = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
-                 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
-
-
 def _sales_year(date: pd.Timestamp) -> int:
     """Return the sales year for a date (July–June convention)."""
     if date.month >= 7:
@@ -65,30 +60,52 @@ def compute_monthly_profile(
     """
     df = df.copy()
     df[date_col] = pd.to_datetime(df[date_col])
-    df["_month"] = df[date_col].dt.month
-    df["_year"] = df[date_col].dt.year
-    df["_sales_year"] = df[date_col].apply(_sales_year)
+    entities = pd.Index(df[entity_col].dropna().unique(), name=entity_col)
+    full_dates = pd.date_range(df[date_col].min(), df[date_col].max(), freq="D", name=date_col)
 
-    # Daily sales already; sum by entity, sales_year, month
-    monthly_totals = (
-        df.groupby([entity_col, "_sales_year", "_month"], as_index=False)[qty_col]
+    # Build a complete entity-day calendar before computing any monthly rate.
+    # This is essential for seasonal products: a missing entity-month must enter
+    # the annual profile as zero rather than disappear from the across-year mean.
+    daily = (
+        df.groupby([entity_col, date_col], as_index=False)[qty_col]
         .sum()
+        .set_index([entity_col, date_col])
+        .reindex(pd.MultiIndex.from_product([entities, full_dates]))
+        .fillna({qty_col: 0.0})
+        .reset_index()
     )
+    daily["_month"] = daily[date_col].dt.month
+    daily["_sales_year"] = daily[date_col].apply(_sales_year)
 
-    # Normalize by days in month → avg daily sales for that entity-year-month
-    monthly_totals["_days"] = monthly_totals["_month"].map(DAYS_IN_MONTH)
-    monthly_totals["avg_daily_sales"] = monthly_totals[qty_col] / monthly_totals["_days"]
+    monthly_totals = (
+        daily.groupby([entity_col, "_sales_year", "_month"], as_index=False)
+        .agg(
+            gross_sales_qty=(qty_col, "sum"),
+            active_days=(qty_col, lambda x: int((x > 0).sum())),
+            total_days=(qty_col, "size"),
+        )
+    )
+    monthly_totals["avg_daily_sales"] = (
+        monthly_totals["gross_sales_qty"] / monthly_totals["total_days"]
+    )
+    monthly_totals["active_rate"] = (
+        monthly_totals["active_days"] / monthly_totals["total_days"]
+    )
 
     # Annual totals per entity-sales_year (for proportion)
     annual_totals = (
-        monthly_totals.groupby([entity_col, "_sales_year"])[qty_col]
+        monthly_totals.groupby([entity_col, "_sales_year"])["gross_sales_qty"]
         .sum()
         .reset_index(name="_annual_qty")
     )
     monthly_totals = monthly_totals.merge(
         annual_totals, on=[entity_col, "_sales_year"], how="left"
     )
-    monthly_totals["sales_proportion"] = monthly_totals[qty_col] / monthly_totals["_annual_qty"]
+    monthly_totals["sales_proportion"] = np.where(
+        monthly_totals["_annual_qty"] > 0,
+        monthly_totals["gross_sales_qty"] / monthly_totals["_annual_qty"],
+        np.nan,
+    )
 
     # Average across sales years for each entity-month
     profile = (
@@ -96,30 +113,13 @@ def compute_monthly_profile(
         .agg(
             avg_daily_sales=("avg_daily_sales", "mean"),
             sales_proportion=("sales_proportion", "mean"),
+            active_rate=("active_rate", "mean"),
         )
         .rename(columns={"_month": "month"})
     )
-
-    # Active rate: fraction of entity-day records with positive sales
-    daily_positive = (
-        df.groupby([entity_col, "_sales_year", "_month"], as_index=False)
-        .agg(
-            active_days=(qty_col, lambda x: int((x > 0).sum())),
-            total_days=(qty_col, "size"),
-        )
-    )
-    daily_positive["active_rate"] = daily_positive["active_days"] / daily_positive["total_days"]
-    active_profile = (
-        daily_positive.groupby([entity_col, "_month"], as_index=False)["active_rate"]
-        .mean()
-        .rename(columns={"_month": "month"})
-    )
-
-    profile = profile.merge(active_profile, on=[entity_col, "month"], how="left")
 
     # Ensure all 12 months present for each entity (fill missing with 0)
     all_months = pd.DataFrame({"month": MONTH_ORDER})
-    entities = profile[entity_col].unique()
     full_index = pd.MultiIndex.from_product(
         [entities, MONTH_ORDER], names=[entity_col, "month"]
     )

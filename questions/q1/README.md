@@ -30,9 +30,10 @@
 
 ## 3. 核心结果
 
-- 单品层：64 个单品入选，5 个季节聚类，簇规模 [5, 6, 7, 17, 29]。
-- 聚类指标：轮廓系数 0.235，CH 13.0，DB 1.50，重采样 ARI 0.827。
+- 单品层：64 个单品入选，5 个季节聚类，簇规模 [7, 8, 11, 17, 21]。
+- 聚类指标：轮廓系数 0.233，CH 15.79，DB 1.48，完整销售年度块重采样 ARI 0.566。
 - 品类层：6 品类完整 15 对关系矩阵，不删除弱关系。
+- 单品层：完整输出 2016 对机器可读关系，全年有 18 对达到 |ρ|≥0.30 且区间不跨 0。
 - 分布：70 个对象中 45 个参数分布通过 KS 检验，25 个 KDE 回退。
 - 旧方法对比：旧 MIC + Graphical Lasso 仅得到 10 条严格条件关联边，新方法保留全部关系并用可信度标记区分强弱。
 
@@ -65,7 +66,7 @@ python questions\q1\code\validate_q1_outputs.py
 - `code/q1_seasonality.py`：月份/四季画像与特征构建。
 - `code/q1_clustering.py`：K-means 聚类、k 评价与簇命名。
 - `code/q1_relationships.py`：四种关系指标、Bootstrap CI、BH 校正。
-- `code/plot_q1_matlab.m`：MATLAB 学术作图（7 组图）。
+- `code/plot_q1_matlab.m`：MATLAB 学术作图（7 组正式彩色图，并另存灰度打印预览）。
 - `code/validate_q1_outputs.py`：跨文件一致性校验。
 - `code/q1_model_legacy_appendix.py`：旧版 MIC + Graphical Lasso 附录对照。
 - `modeling/q1_modeling_idea.md`：逐步推导与模型边界。

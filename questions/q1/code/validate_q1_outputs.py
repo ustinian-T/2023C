@@ -42,6 +42,7 @@ def main() -> None:
         "tab_q1_cluster_k_selection.csv",
         "tab_q1_sku_clusters.csv",
         "tab_q1_cluster_profiles.csv",
+        "tab_q1_all_sku_pair_relationships.csv",
         "tab_q1_category_pair_relationships.csv",
         "tab_q1_within_category_pair_relationships.csv",
         "tab_q1_cluster_pair_relationships.csv",
@@ -81,6 +82,17 @@ def main() -> None:
 
     sku_monthly = pd.read_csv(TABLES / "tab_q1_monthly_sku_profile.csv")
     check(len(sku_monthly) == n_selected * 12, f"SKU monthly: {n_selected*12} rows (got {len(sku_monthly)})", checks)
+    sku_prop_sum = sku_monthly.groupby("sku_code")["sales_proportion"].sum()
+    check(
+        np.allclose(sku_prop_sum, 1.0, atol=1e-8),
+        "Each SKU's 12 monthly sales proportions sum to 1",
+        checks,
+    )
+    check(
+        sku_monthly["active_rate"].between(0, 1).all(),
+        "SKU monthly active rates are in [0, 1]",
+        checks,
+    )
 
     # ---- Clustering ----
     k_eval = pd.read_csv(TABLES / "tab_q1_cluster_k_selection.csv")
@@ -102,6 +114,11 @@ def main() -> None:
 
     cluster_profiles = pd.read_csv(TABLES / "tab_q1_cluster_profiles.csv")
     check(len(cluster_profiles) == summary["clustering"]["k_selected"], "One profile per cluster", checks)
+    check(
+        cluster_profiles["cluster_name"].nunique() == summary["clustering"]["k_selected"],
+        "Five cluster names are unique",
+        checks,
+    )
     min_cluster_size_val = int(cluster_profiles["n_skus"].min())
     check(min_cluster_size_val >= 1, "No empty clusters", checks)
     if min_cluster_size_val < 5:
@@ -114,11 +131,27 @@ def main() -> None:
         + cluster_profiles["autumn_proportion"]
         + cluster_profiles["winter_proportion"]
     )
+    check(np.allclose(prop_sum, 1.0, atol=1e-8), "Cluster seasonal proportions sum to 1", checks)
+
+    # ---- Complete 64-SKU mother table ----
+    all_sku = pd.read_csv(TABLES / "tab_q1_all_sku_pair_relationships.csv")
+    expected_sku_pairs = n_selected * (n_selected - 1) // 2
     check(
-        all(abs(prop_sum - 1.0) < 0.5),
-        f"Seasonal proportions within 0.5 of 1.0 per cluster (max diff: {abs(prop_sum - 1.0).max():.3f})",
+        len(all_sku) == expected_sku_pairs,
+        f"Complete SKU relation table has {expected_sku_pairs} pairs",
         checks,
     )
+    for prefix in ("sales", "share"):
+        for season in ("春季", "夏季", "秋季", "冬季", "全年"):
+            r_col = f"{prefix}_corr_{season}"
+            lo_col = f"{prefix}_ci_lower_{season}"
+            hi_col = f"{prefix}_ci_upper_{season}"
+            strong = all_sku[r_col].abs() >= 0.30
+            check(
+                all_sku.loc[strong, [lo_col, hi_col]].notna().all().all(),
+                f"Strong {prefix} relationships in {season} have bootstrap CIs",
+                checks,
+            )
 
     # ---- Category relationships ----
     cat_rels = pd.read_csv(TABLES / "tab_q1_category_pair_relationships.csv")
@@ -191,6 +224,10 @@ def main() -> None:
     # ---- Legacy appendix check ----
     legacy = ROOT / "code" / "q1_model_legacy_appendix.py"
     check(legacy.exists(), "Legacy MIC+Graphical Lasso code preserved as appendix", checks)
+
+    report_text = (ROOT / "report" / "main.tex").read_text(encoding="utf-8")
+    check("季节画像" in report_text and "K-means" in report_text, "Paper uses redesigned main route", checks)
+    check("47 个长期活跃单品" not in report_text, "Paper no longer states the legacy 47-SKU headline", checks)
 
     # ---- Report ----
     report = {

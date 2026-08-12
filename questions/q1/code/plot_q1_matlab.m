@@ -23,17 +23,19 @@ if ~exist(figureDir, 'dir'), mkdir(figureDir); end
 
 fontName = 'Microsoft YaHei';
 
-% SCI palette
-paleMint = [221 242 240] / 255;
-iceMint  = [214 246 241] / 255;
-mint     = [166 235 221] / 255;
-teal     = [136 201 208] / 255;
-lavender = [146 158 210] / 255;
-blue     = [ 94 140 190] / 255;
-navy     = [ 62  86 130] / 255;
-dark     = [ 15  22  51] / 255;
+% User-specified green-orange-blue-purple palette.  Line styles and markers
+% are deliberately redundant so curves remain distinguishable in grayscale.
+sage       = [153 188 153] / 255;  % #99BC99
+peach      = [255 204 153] / 255;  % #FFCC99
+powderBlue = [153 187 222] / 255;  % #99BBDE
+softPurple = [182 182 255] / 255;  % #B6B6FF
+deepTeal   = [ 19 103 100] / 255;  % #136764
+coral      = [255 165 121] / 255;  % #FFA579
+strongBlue = [ 62 133 197] / 255;  % #3E85C5
+purple     = [162 162 255] / 255;  % #A2A2FF
+dark       = [ 36  45  56] / 255;
 
-clusterColors = [mint; teal; blue; lavender; navy; paleMint];
+clusterColors = [deepTeal; coral; strongBlue; purple; sage; peach];
 seasonNames = {'Spring', 'Summer', 'Autumn', 'Winter'};
 seasonNamesCN = {'春季', '夏季', '秋季', '冬季'};
 
@@ -60,10 +62,12 @@ try
         nexttile;
         row = catRows(idx, :);
         % Bar chart: zero share vs positive
-        bar([row.zero_share, 1-row.zero_share], 'FaceColor', [teal; mint]');
+        b = bar([row.zero_share, 1-row.zero_share], 'FaceColor', 'flat', ...
+            'EdgeColor', dark, 'LineWidth', 1.0);
+        b.CData = [sage; strongBlue];
         title(sprintf('%s', row.item_name));
         ylabel('Proportion');
-        legend({'Zero sales', 'Positive sales'}, 'Location', 'best');
+        % X labels already identify the two bars; omit a redundant legend.
         subtitle(sprintf('Best: %s (AIC=%.1f, KS p=%.3f)', ...
             row.best_distribution, row.best_aic, row.best_ks_p_value));
         set(gca, 'XTickLabel', {'Zero', 'Positive'});
@@ -88,10 +92,11 @@ try
     hold on;
     lineStyles = {'-', '--', '-.', ':', '-', '--'};
     markers = {'o', 's', '^', 'd', 'v', 'p'};
+    curveHandles = gobjects(length(categories), 1);
     for i = 1:length(categories)
         cat = categories(i);
         catData = catMonthly(catMonthly.category_name == cat, :);
-        plot(catData.month, catData.seasonal_index, ...
+        curveHandles(i) = plot(catData.month, catData.seasonal_index, ...
             'LineStyle', lineStyles{i}, 'Marker', markers{i}, ...
             'LineWidth', 2, 'MarkerSize', 8, ...
             'Color', clusterColors(mod(i-1, size(clusterColors,1))+1, :), ...
@@ -100,7 +105,7 @@ try
     yline(1.0, 'k--', 'LineWidth', 1);
     xlabel('Month'); ylabel('Seasonal Index');
     title('Six Categories: 12-Month Seasonal Index');
-    legend('Location', 'northeastoutside');
+    legend(curveHandles, categories, 'Location', 'northeastoutside', 'NumColumns', 1);
     xlim([1 12]); xticks(1:12);
     grid on; hold off;
     exportFig(fig, fullfile(figureDir, 'fig_q1_seasonal_index_curves'));
@@ -122,7 +127,7 @@ try
     % Silhouette
     nexttile;
     plot(kEval.k, kEval.silhouette, 'o-', 'LineWidth', 2, ...
-        'Color', teal, 'MarkerFaceColor', teal, 'MarkerSize', 10);
+        'Color', deepTeal, 'MarkerFaceColor', 'white', 'MarkerSize', 10);
     xlabel('k'); ylabel('Silhouette Score');
     title('Silhouette Score (higher better)');
     grid on;
@@ -130,7 +135,7 @@ try
     % Calinski-Harabasz
     nexttile;
     plot(kEval.k, kEval.calinski_harabasz, 's-', 'LineWidth', 2, ...
-        'Color', blue, 'MarkerFaceColor', blue, 'MarkerSize', 10);
+        'Color', strongBlue, 'MarkerFaceColor', strongBlue, 'MarkerSize', 10);
     xlabel('k'); ylabel('Calinski-Harabasz');
     title('CH Score (higher better)');
     grid on;
@@ -138,7 +143,7 @@ try
     % Davies-Bouldin
     nexttile;
     plot(kEval.k, kEval.davies_bouldin, 'd-', 'LineWidth', 2, ...
-        'Color', lavender, 'MarkerFaceColor', lavender, 'MarkerSize', 10);
+        'Color', coral, 'MarkerFaceColor', 'white', 'MarkerSize', 10);
     xlabel('k'); ylabel('Davies-Bouldin');
     title('DB Score (lower better)');
     grid on;
@@ -146,13 +151,12 @@ try
     % Bootstrap ARI
     nexttile;
     errorbar(kEval.k, kEval.bootstrap_ari_mean, kEval.bootstrap_ari_std, ...
-        '^-', 'LineWidth', 2, 'Color', navy, 'MarkerFaceColor', navy, 'MarkerSize', 10);
+        '^--', 'LineWidth', 2, 'Color', purple, 'MarkerFaceColor', purple, 'MarkerSize', 10);
     xlabel('k'); ylabel('Bootstrap ARI');
     title('Resampling Stability (mean ARI ± 1 std)');
     grid on;
 
-    sgtitle(sprintf('K-means Clustering Evaluation (k=%d selected)', ...
-        kEval.k(kEval.silhouette == max(kEval.silhouette))));
+    sgtitle('K-means Clustering Evaluation (k=5 selected by combined criteria)');
     exportFig(fig, fullfile(figureDir, 'fig_q1_k_selection'));
 catch ME
     warning('Figure 3 failed: %s', ME.message);
@@ -185,14 +189,17 @@ try
         uniqueSkus = unique(cMonthly.sku_code);
         for s = 1:length(uniqueSkus)
             sData = cMonthly(cMonthly.sku_code == uniqueSkus(s), :);
+            faintColor = 0.72 * [1 1 1] + 0.28 * clusterColors(cid, :);
             plot(sData.month, sData.seasonal_index, '-', ...
-                'Color', [teal 0.2], 'LineWidth', 0.5);
+                'Color', faintColor, 'LineWidth', 0.6);
         end
 
         % Cluster mean
         cMean = groupsummary(cMonthly, 'month', 'mean', 'seasonal_index');
-        plot(cMean.month, cMean.mean_seasonal_index, 'o-', ...
-            'LineWidth', 3, 'Color', navy, 'MarkerFaceColor', navy, 'MarkerSize', 8);
+        meanStyles = {'o-', 's--', '^-', 'd-.', 'v-'};
+        plot(cMean.month, cMean.mean_seasonal_index, meanStyles{cid}, ...
+            'LineWidth', 3, 'Color', clusterColors(cid,:), ...
+            'MarkerFaceColor', 'white', 'MarkerSize', 8);
 
         yline(1.0, 'k--', 'LineWidth', 1);
         cName = clusterProfiles.cluster_name(cid);
@@ -211,12 +218,14 @@ end
 % FIGURE 5: Six-category four-season relationship heatmaps
 % =======================================================================
 try
-    catNames = categories;  % from Figure 2
+    catMonthlyForNames = readtable(fullfile(tableDir, 'tab_q1_monthly_category_profile.csv'), ...
+        'TextType', 'string');
+    catNames = unique(catMonthlyForNames.category_name, 'stable');
     nCat = length(catNames);
 
     % Read category pair relationships
     catRels = readtable(fullfile(tableDir, 'tab_q1_category_pair_relationships.csv'), ...
-        'TextType', 'string');
+        'TextType', 'string', 'VariableNamingRule', 'preserve');
 
     figCount = figCount + 1;
     fig = figure('Name', 'Category Relationships', 'NumberTitle', 'off', ...
@@ -248,10 +257,10 @@ try
         end
 
         imagesc(mat);
-        colormap(gca, bluewhitered(256));
+        colormap(gca, greenwhitepurple(256));
         clim([-1 1]);
         colorbar;
-        xticks(1:nCat); xticklabels(catNames);
+        xticks(1:nCat); xticklabels(catNames); xtickangle(28);
         yticks(1:nCat); yticklabels(catNames);
         title(sprintf('%s Sales Correlation', season));
 
@@ -259,8 +268,11 @@ try
         for i = 1:nCat
             for j = 1:nCat
                 if i ~= j && abs(mat(i,j)) > 0.01
-                    text(j, i, sprintf('%.2f', mat(i,j)), ...
-                        'HorizontalAlignment', 'center', 'FontSize', 10);
+                    txtColor = dark;
+                    if abs(mat(i,j)) >= 0.55, txtColor = [1 1 1]; end
+                    text(j, i, sprintf('%+.2f', mat(i,j)), ...
+                        'HorizontalAlignment', 'center', 'FontSize', 10, ...
+                        'FontWeight', 'bold', 'Color', txtColor);
                 end
             end
         end
@@ -276,7 +288,7 @@ end
 % =======================================================================
 try
     clusterRels = readtable(fullfile(tableDir, 'tab_q1_cluster_pair_relationships.csv'), ...
-        'TextType', 'string');
+        'TextType', 'string', 'VariableNamingRule', 'preserve');
 
     clusterOrder = zeros(nClusters, 1);
     for i = 1:nClusters
@@ -314,18 +326,21 @@ try
         end
 
         imagesc(mat);
-        colormap(gca, bluewhitered(256));
+        colormap(gca, greenwhitepurple(256));
         clim([-1 1]);
         colorbar;
-        xticks(1:nClusters); xticklabels(clusterLabels);
+        xticks(1:nClusters); xticklabels(clusterLabels); xtickangle(28);
         yticks(1:nClusters); yticklabels(clusterLabels);
         title(sprintf('%s Cluster Sales Correlation', season));
 
         for i = 1:nClusters
             for j = 1:nClusters
                 if i ~= j && abs(mat(i,j)) > 0.01
-                    text(j, i, sprintf('%.2f', mat(i,j)), ...
-                        'HorizontalAlignment', 'center', 'FontSize', 10);
+                    txtColor = dark;
+                    if abs(mat(i,j)) >= 0.55, txtColor = [1 1 1]; end
+                    text(j, i, sprintf('%+.2f', mat(i,j)), ...
+                        'HorizontalAlignment', 'center', 'FontSize', 10, ...
+                        'FontWeight', 'bold', 'Color', txtColor);
                 end
             end
         end
@@ -337,20 +352,25 @@ catch ME
 end
 
 % =======================================================================
-% FIGURE 7: Representative within-cluster SKU pair scatter + network
+% FIGURE 7: Representative within-cluster SKU relationships with 95% CI
 % =======================================================================
 try
     withinClust = readtable(fullfile(tableDir, 'tab_q1_within_cluster_pair_relationships.csv'), ...
-        'TextType', 'string');
-    skuDaily = readtable(fullfile(tableDir, 'tab_q1_sku_daily_pivot.csv'), ...
-        'TextType', 'string');
+        'TextType', 'string', 'VariableNamingRule', 'preserve');
+    activity = readtable(fullfile(tableDir, 'tab_q1_sku_activity_filter.csv'), ...
+        'TextType', 'string', 'VariableNamingRule', 'preserve');
+    if isnumeric(activity.sku_code)
+        activityCodes = string(compose('%.0f', activity.sku_code));
+    else
+        activityCodes = string(activity.sku_code);
+    end
 
     figCount = figCount + 1;
     fig = figure('Name', 'Representative SKU Relationships', 'NumberTitle', 'off', ...
         'Position', [50 50 2400 1800], 'Visible', 'off');
     tiledlayout(2, 3, 'Padding', 'compact', 'TileSpacing', 'compact');
 
-    % For each cluster, plot top positive and top negative pair
+    % For each cluster, plot the five largest absolute full-year correlations.
     uniqueLevels = unique(withinClust.level);
     for li = 1:min(length(uniqueLevels), 6)
         nexttile;
@@ -361,24 +381,33 @@ try
             continue;
         end
 
-        % Find strongest positive and negative
         if any(strcmp(lvlData.Properties.VariableNames, 'sales_corr_全年'))
             [~, sortIdx] = sort(abs(lvlData.('sales_corr_全年')), 'descend');
-            top = lvlData(sortIdx(1), :);
-            src = string(top.source);
-            tgt = string(top.target);
-
-            % Scatter plot
-            if any(strcmp(skuDaily.Properties.VariableNames, src)) && ...
-               any(strcmp(skuDaily.Properties.VariableNames, tgt))
-                x = skuDaily.(src);
-                y = skuDaily.(tgt);
-                scatter(x, y, 10, teal, 'filled', 'MarkerFaceAlpha', 0.3);
-                xlabel(sprintf('%s', src)); ylabel(sprintf('%s', tgt));
-                rho = top.('sales_corr_全年');
-                title(sprintf('%s: r=%.3f', level, rho));
-                grid on;
+            top = lvlData(sortIdx(1:min(5, height(lvlData))), :);
+            rho = top.('sales_corr_全年');
+            lower = top.('sales_ci_lower_全年');
+            upper = top.('sales_ci_upper_全年');
+            lower(~isfinite(lower)) = rho(~isfinite(lower));
+            upper(~isfinite(upper)) = rho(~isfinite(upper));
+            yPos = (1:height(top))';
+            errorbar(rho, yPos, rho-lower, upper-rho, 'horizontal', 'o', ...
+                'Color', clusterColors(li,:), 'MarkerFaceColor', 'white', ...
+                'LineWidth', 1.6, 'MarkerSize', 7);
+            pairLabels = strings(height(top), 1);
+            for pi = 1:height(top)
+                src = normalizeCode(top.source(pi));
+                tgt = normalizeCode(top.target(pi));
+                srcName = activity.sku_name(activityCodes == src);
+                tgtName = activity.sku_name(activityCodes == tgt);
+                if isempty(srcName), srcName = src; end
+                if isempty(tgtName), tgtName = tgt; end
+                pairLabels(pi) = srcName(1) + "—" + tgtName(1);
             end
+            yticks(yPos); yticklabels(pairLabels); set(gca, 'YDir', 'reverse');
+            xline(0, 'k--', 'LineWidth', 1);
+            xlabel('Full-year Spearman correlation (95% CI)');
+            title(strrep(level, 'within_cluster_', '簇'));
+            xlim([-1 1]); grid on;
         else
             title(sprintf('%s: no full-year data', level));
         end
@@ -408,22 +437,35 @@ function exportFig(fig, basePath)
     [p, f, ~] = fileparts(basePath);
     previewDir = fullfile(p, 'print_preview');
     if ~exist(previewDir, 'dir'), mkdir(previewDir); end
-    print(fig, fullfile(previewDir, sprintf('%s_bw_preview.png', f)), ...
-        '-dpng', '-r150');
+    colorPreview = fullfile(previewDir, sprintf('%s_color_temp.png', f));
+    bwPreview = fullfile(previewDir, sprintf('%s_bw_preview.png', f));
+    print(fig, colorPreview, '-dpng', '-r150');
+    rgb = imread(colorPreview);
+    gray = rgb2gray(rgb);
+    imwrite(gray, bwPreview);
+    delete(colorPreview);
 end
 
 % =======================================================================
 % Helper: blue-white-red colormap
 % =======================================================================
-function cmap = bluewhitered(n)
+function cmap = greenwhitepurple(n)
     if nargin < 1, n = 256; end
-    blue = [15 22 51] / 255;
+    green = [19 103 100] / 255;
     white = [1 1 1];
-    red = [166 60 60] / 255;
+    purple = [162 162 255] / 255;
 
     half = floor(n / 2);
-    r = [linspace(blue(1), white(1), half)'; linspace(white(1), red(1), n-half)'];
-    g = [linspace(blue(2), white(2), half)'; linspace(white(2), red(2), n-half)'];
-    b = [linspace(blue(3), white(3), half)'; linspace(white(3), red(3), n-half)'];
+    r = [linspace(green(1), white(1), half)'; linspace(white(1), purple(1), n-half)'];
+    g = [linspace(green(2), white(2), half)'; linspace(white(2), purple(2), n-half)'];
+    b = [linspace(green(3), white(3), half)'; linspace(white(3), purple(3), n-half)'];
     cmap = [r g b];
+end
+
+function code = normalizeCode(value)
+    if isnumeric(value)
+        code = string(sprintf('%.0f', value));
+    else
+        code = string(value);
+    end
 end

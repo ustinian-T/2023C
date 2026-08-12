@@ -7,6 +7,7 @@ Evaluates k=2..8 with multiple metrics and bootstrap stability.
 
 from __future__ import annotations
 
+from itertools import permutations
 from typing import Any
 
 import numpy as np
@@ -76,7 +77,7 @@ def evaluate_k_range(
     min_k, max_k = k_range
     rows = []
 
-    # Identify sales years for block bootstrap
+    # Identify complete July-June sales years for block bootstrap.
     daily_pivot = daily_pivot.copy()
     daily_pivot.index = pd.to_datetime(daily_pivot.index)
 
@@ -84,10 +85,34 @@ def evaluate_k_range(
         return dt.year if dt.month >= 7 else dt.year - 1
 
     years = sorted(set(_sales_year(d) for d in daily_pivot.index))
-    year_indices = {
-        y: [i for i, d in enumerate(daily_pivot.index) if _sales_year(d) == y]
-        for y in years
-    }
+    complete_years = []
+    for year in years:
+        block = daily_pivot[[ _sales_year(d) == year for d in daily_pivot.index ]]
+        if len(block) >= 365 and set(block.index.month) == set(MONTH_ORDER):
+            complete_years.append(year)
+    if not complete_years:
+        raise ValueError("No complete July-June sales year is available for clustering stability")
+
+    def _features_from_year_sample(sampled_years: np.ndarray) -> np.ndarray:
+        """Rebuild the 24 seasonal features after resampling whole sales years."""
+        yearly_features = []
+        for year in sampled_years:
+            block = daily_pivot[[ _sales_year(d) == int(year) for d in daily_pivot.index ]]
+            month_total = block.groupby(block.index.month).sum().reindex(MONTH_ORDER, fill_value=0.0)
+            month_days = block.groupby(block.index.month).size().reindex(MONTH_ORDER, fill_value=0)
+            annual_total = month_total.sum(axis=0).replace(0.0, np.nan)
+            proportion = month_total.div(annual_total, axis=1).fillna(0.0).T.to_numpy()
+            active = (
+                (block > 0).groupby(block.index.month).sum()
+                .reindex(MONTH_ORDER, fill_value=0)
+                .div(month_days.replace(0, np.nan), axis=0)
+                .fillna(0.0).T.to_numpy()
+            )
+            yearly_features.append(np.hstack([proportion, active]))
+        raw = np.mean(yearly_features, axis=0)
+        scale = raw.std(axis=0, ddof=0)
+        scale[scale == 0] = 1.0
+        return np.nan_to_num((raw - raw.mean(axis=0)) / scale)
 
     for k in range(min_k, max_k + 1):
         labels, model = _single_kmeans(X, k, seed, n_init)
@@ -101,32 +126,19 @@ def evaluate_k_range(
         _, counts = np.unique(labels, return_counts=True)
         min_cluster = int(counts.min())
 
-        # Entity-bootstrap stability (ARI)
+        # Whole-sales-year block bootstrap stability (ARI).
         ari_values = []
         rng = np.random.default_rng(seed)
-        n = X.shape[0]
-        for _ in range(bootstrap_reps):
-            # Bootstrap entities with replacement
-            boot_idx = rng.choice(n, size=n, replace=True)
-            unique_idx = np.unique(boot_idx)
-            if len(unique_idx) < k:
-                continue
+        for rep in range(bootstrap_reps):
+            sampled_years = rng.choice(
+                complete_years, size=len(complete_years), replace=True
+            )
             try:
-                # Fit on bootstrapped entities
-                X_boot = X[boot_idx]
-                labels_boot, _ = _single_kmeans(X_boot, k, seed, n_init=30)
-
-                # Build mapping: for entities appearing in both original and bootstrap,
-                # compare their cluster assignments
-                # Map each original entity to its majority vote in bootstrap
-                # Simplification: fit on unique subset, compare on intersection
-                X_unique = X[unique_idx]
-                labels_unique, _ = _single_kmeans(X_unique, k, seed, n_init=30)
-
-                # Compare the two clusterings on the unique entities
-                ari_values.append(adjusted_rand_score(
-                    labels[unique_idx], labels_unique
-                ))
+                X_boot = _features_from_year_sample(sampled_years)
+                labels_boot, _ = _single_kmeans(
+                    X_boot, k, seed + rep + 1, n_init=30
+                )
+                ari_values.append(adjusted_rand_score(labels, labels_boot))
             except Exception:
                 continue
 
@@ -252,48 +264,37 @@ def cluster_and_name(
         cluster_seasonal["season"], categories=SEASON_ORDER, ordered=True
     )
 
-    # Determine cluster names from peak season and concentration
-    def _name_cluster(cid: int) -> str:
-        cdata = cluster_seasonal[cluster_seasonal["cluster_id"] == cid].copy()
-        if cdata.empty:
-            return f"簇{cid}"
-        # Find peak season
-        peak_row = cdata.loc[cdata["sales_proportion"].idxmax()]
-        peak_season = str(peak_row["season"])
-
-        # Check if year-round (all seasons > 15% proportion)
-        props = cdata["sales_proportion"].values
-        if np.all(props > 0.15) and (props.max() / (props.min() + 0.01) < 2.5):
-            return "常年型"
-
-        # Check concentration
-        if props.max() / (props.min() + 0.01) > 3.0:
-            # Strongly seasonal
-            pm = peak_months[cid]
-            if peak_season == "春季":
-                return "春季型"
-            elif peak_season == "夏季":
-                if pm in [6]:
-                    return "初夏型"
-                else:
-                    return "夏秋型"
-            elif peak_season == "秋季":
-                return "夏秋型"
-            elif peak_season == "冬季":
-                return "冬季型"
-
-        # Moderate seasonality
-        if peak_season == "春季":
-            return "春季偏常型"
-        elif peak_season == "夏季":
-            return "夏季偏常型"
-        elif peak_season == "秋季":
-            return "秋季偏常型"
-        elif peak_season == "冬季":
-            return "冬季偏常型"
-        return f"簇{cid}"
-
-    cluster_names = {cid: _name_cluster(cid) for cid in range(k)}
+    # Assign the five semantic names one-to-one.  Prototype matching avoids
+    # duplicate names while preserving the data-driven K-means partition.
+    semantic_names = ["春季型", "初夏型", "夏秋型", "冬季型", "常年型"]
+    prototype_months = [
+        [3, 4, 5], [5, 6, 7], [8, 9, 10], [11, 12, 1, 2], MONTH_ORDER,
+    ]
+    prototypes = []
+    for months in prototype_months:
+        vector = np.zeros(12, dtype=float)
+        vector[np.array(months) - 1] = 1.0 / len(months)
+        prototypes.append(vector)
+    actual_profiles = []
+    for cid in range(k):
+        values = (
+            cluster_monthly.loc[cluster_monthly["cluster_id"] == cid]
+            .set_index("month")["sales_proportion"]
+            .reindex(MONTH_ORDER, fill_value=0.0).to_numpy(dtype=float)
+        )
+        total = values.sum()
+        actual_profiles.append(values / total if total > 0 else np.full(12, 1 / 12))
+    costs = np.array([
+        [np.sum((profile - prototype) ** 2) for prototype in prototypes]
+        for profile in actual_profiles
+    ])
+    best_assignment = min(
+        permutations(range(k)),
+        key=lambda assignment: sum(costs[cid, assignment[cid]] for cid in range(k)),
+    )
+    cluster_names = {
+        cid: semantic_names[best_assignment[cid]] for cid in range(k)
+    }
     sku_clusters["cluster_name"] = sku_clusters["cluster_id"].map(cluster_names)
     sku_clusters["peak_month"] = sku_clusters["cluster_id"].map(
         lambda cid: int(peak_months[cid])

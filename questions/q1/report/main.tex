@@ -1,178 +1,117 @@
-\documentclass[12pt,a4paper]{ctexart}
-\usepackage[margin=2.4cm]{geometry}
-\usepackage{amsmath,amssymb,booktabs,array,longtable,graphicx,xcolor,hyperref}
+\documentclass[UTF8,12pt]{ctexart}
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,booktabs,array,graphicx}
 \usepackage{caption}
 \captionsetup{font=small,labelfont=bf}
-\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black}
 \setlength{\parindent}{2em}
-\setlength{\parskip}{0.25em}
-\newcommand{\E}{\mathrm{E}}
+\setlength{\parskip}{0.35em}
 
-\title{问题一：基于多季节 STL、MIC 与 Graphical Lasso 的蔬菜销量关联网络}
+\title{问题一：基于季节画像、K-means 聚类与分层相关的蔬菜销量分析}
 \author{}
 \date{}
 
 \begin{document}
 \maketitle
 
-\begin{abstract}
-针对蔬菜品类与单品销量分布及相互关系问题，本文建立“多季节 STL 去时间结构--近似最大信息系数筛选--Graphical Lasso 条件关联--移动块 Bootstrap 稳定性”的四层模型。首先以零销量概率与正销量条件分布构造两部销量分布；其次对日销量作对数变换，并剔除星期、年度季节和长期趋势；再利用保留自相关的循环移位零分布确定 MIC 阈值，最后用 EBIC 选择稀疏精度矩阵的正则强度。251 个单品中筛得 47 个长期活跃单品，在 587 天公共窗口上得到 18 条 MIC 候选边，经条件关联和稳定性检验后保留 10 条边，其中正边 6 条、负边 4 条。六品类中 4 类正销量服从 Gamma 分布、2 类服从 Lognormal 分布；品类层最终保留 2 条稳定正边。正负边分别解释为潜在互补/同步与潜在替代，不作因果推断。
-
-\noindent\textbf{关键词：} 多季节 STL；最大信息系数；Graphical Lasso；移动块 Bootstrap；蔬菜销量
-\end{abstract}
-
 \section{问题分析}
 
-原始销量的相关性同时混合了三类信息：共同的星期节奏、年度供给季节与长期经营趋势，以及商品之间真正的短期共变。若直接计算相关矩阵，共同时间结构会制造大量难以解释的伪关联；若只用线性相关，又会遗漏非线性关系；若逐对分析 251 个单品，则会产生数万条边。因此本文先消除时间结构，再用 MIC 发现非线性候选关系，最后用稀疏精度矩阵识别控制其他商品后的直接条件关联。
+问题一要求同时说明各蔬菜品类及单品销量的分布规律与相互关系。销量序列具有非负、右偏和零值较多等特点，同时不同单品存在明显的季节上市规律。如果直接在全部日销量上计算一个相关系数，季节商品容易因大量零值被排除，且“共同客流造成的同涨”会与“销售结构中的此消彼长”混合。因此本文采用“零膨胀两部分布--月份与四季画像--K-means 季节型聚类--分层关系分析”的主线。旧版 MIC 与 Graphical Lasso 只作为附录中的严格条件关联对照，不承担本问主结论。
 
-单品销量含有大量零值，故分布分析采用两部模型；同时，低频单品会使协方差估计不稳定，必须在进入网络前设置透明的活动度门槛。该动线既回答“分布规律”，又回答“相互关系”，并为后续单品组合模型提供候选关系而不越过因果边界。
+\section{数据与符号}
 
-\section{数据、符号与假设}
-
-直接读取处理后的日单品与日品类数据。数据覆盖 2020 年 7 月 1 日至 2023 年 6 月 30 日，日--单品和日--品类键均无重复，销量无负值。记单品 $i$ 在日期 $t$ 的毛销量为 $Y_{it}$（kg），品类 $c$ 的销量为
+直接使用预处理后的日单品表和日品类表，时间范围为 2020 年 7 月 1 日至 2023 年 6 月 30 日。记单品 $i$ 在日期 $t$ 的销量为 $Y_{it}$（kg），题设品类 $c$ 的销量为
 \begin{equation}
 Y_{ct}=\sum_{i\in c}Y_{it}.
 \end{equation}
+销售年度定义为当年7月至次年6月，从而冬季12月至次年2月不会被年度边界拆开。单品须满足销售跨度不少于730天、正销售日不少于90天、累计销量不少于100 kg，不设置覆盖率门槛。由251个单品中筛得64个。
 
-作如下假设：同一单品在首末记录之间无记录的日期记为零销量；预处理表中销量单位已统一为 kg；去除公共时间结构后的残差可用于分析短期共变；Graphical Lasso 的边表示同期条件关联而非因果效应。
-
-为保证年度季节分解与协方差估计稳定，单品须同时满足：跨度不少于 730 天、正销售日不少于 180 天、记录覆盖率不少于 35\%、累计销量不少于 200 kg。由 251 个单品筛得 47 个，公共分析窗口为 2021 年 1 月 30 日至 2022 年 9 月 8 日，共 587 天。
+同一单品在首末销售记录之间的缺失日记为零销量；首日以前与末日以后视为不可观察。任意单品对的日相关只使用双方销售跨度的交集，避免将尚未上市或已经退市误记为零需求。
 
 \section{模型建立}
 
-\subsection{两部销量分布}
+\subsection{零质量与正销量条件分布}
 
 对任一销量序列先估计零销量概率
 \begin{equation}
 \widehat p_0=\frac{1}{n}\sum_{t=1}^{n}\mathbf 1(Y_t=0).
 \end{equation}
-在 $Y_t>0$ 的样本上分别以极大似然拟合 Normal、Lognormal、Gamma 与 Weibull。候选分布 $M_k$ 的准则为
+在 $Y_t>0$ 的样本上用极大似然法分别拟合 Normal、Lognormal、Gamma 和 Weibull 分布，以
 \begin{equation}
-\mathrm{AIC}_k=2K_k-2\log L_k,
+\mathrm{AIC}=2K-2\ln L
 \end{equation}
-取 AIC 最小者，并用 Kolmogorov--Smirnov 检验评价绝对拟合质量；若 5\% 水平下仍被拒绝，则回退到核密度估计。
+选择相对最优模型，并用 KS 检验评价绝对拟合质量。若AIC最小的参数分布仍在5\%水平被拒绝，则标记为KDE回退。该两部模型将“是否发生销售”与“发生销售后的销量大小”分开描述。
 
-\subsection{多季节 STL 去趋势}
+\subsection{月份与四季画像}
 
-对右偏销量作
+对每个实体补齐完整日历。记销售年度 $y$ 中月份 $m$ 的销量为 $Q_{iym}$，该年度总销量为 $Q_{iy}$，则月销量占比为
 \begin{equation}
-X_{it}=\log(1+Y_{it}),
+P_{iym}=\frac{Q_{iym}}{Q_{iy}},\qquad
+P_{im}=\frac{1}{|\mathcal Y_i|}\sum_{y\in\mathcal Y_i}P_{iym},
 \end{equation}
-并用鲁棒多季节 STL 分解为
+其中 $\mathcal Y_i$ 只包含年度总销量大于0的销售年度，因此 $\sum_{m=1}^{12}P_{im}=1$。月活跃率定义为
 \begin{equation}
-X_{it}=T_{it}+S^{(7)}_{it}+S^{(365)}_{it}+R_{it},
+A_{iym}=\frac{\text{月份 }m\text{ 中正销量日数}}{\text{月份 }m\text{ 的日历日数}},\qquad
+A_{im}=\frac{1}{3}\sum_y A_{iym}.
 \end{equation}
-其中 $T_{it}$ 为长期趋势，$S^{(7)}_{it}$ 与 $S^{(365)}_{it}$ 分别为 7 日和 365 日季节分量，最终关联分析只使用残差 $R_{it}$。STL 以 LOESS 估计季节与趋势项\cite{cleveland1990}。
+月季节指数为月均日销量与全年月均日销量平均值之比。四季按春季3--5月、夏季6--8月、秋季9--11月、冬季12--2月汇总。
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.98\textwidth]{../outputs/figures/fig_q1_stl_decomposition.pdf}
-\caption{代表性单品的多季节 STL 分解。残差层剔除了共同星期、年度季节和长期趋势。}
-\end{figure}
+\subsection{季节型 K-means 聚类}
 
-\subsection{近似 MIC 非线性筛选}
-
-对残差作平均秩变换，在满足 $ab\leq \lfloor n^{0.6}\rfloor$ 的等频 $a\times b$ 网格上计算互信息，并取
+每个单品采用24维特征
 \begin{equation}
-\widehat{\mathrm{MIC}}_{ij}=
-\max_{a,b}\frac{I_{a,b}(R_i;R_j)}{\log\min(a,b)}.
+\mathbf x_i=(P_{i1},\ldots,P_{i12},A_{i1},\ldots,A_{i12})^{\mathsf T},
 \end{equation}
-该量用于借鉴最大信息系数的“广泛关系公平性”思想\cite{reshef2011}，但本文实现明确记作近似 MIC，不冒充 MINE 软件的 MICe。阈值由循环移位替代序列的零分布 99\% 分位确定：循环移位保留各自的边际分布和自相关，同时破坏同期对齐。
-
-\subsection{Graphical Lasso 条件关联}
-
-残差经秩高斯变换和标准化后组成矩阵 $Z$，样本协方差为 $S$。Graphical Lasso 估计精度矩阵\cite{friedman2008}：
+各维标准化后执行K-means：
 \begin{equation}
-\widehat\Theta=\arg\min_{\Theta\succ0}
-\left\{\operatorname{tr}(S\Theta)-\log|\Theta|+
-\lambda\|\Theta\|_{1,\mathrm{off}}\right\}.
+\min_{C_1,\ldots,C_k}\sum_{r=1}^{k}\sum_{i\in C_r}
+\left\|\mathbf z_i-\boldsymbol\mu_r\right\|_2^2.
 \end{equation}
-正则强度由扩展贝叶斯信息准则选取，条件相关为
-\begin{equation}
-\rho_{ij}^{\mathrm{partial}}=-\frac{\widehat\Theta_{ij}}
-{\sqrt{\widehat\Theta_{ii}\widehat\Theta_{jj}}}.
-\end{equation}
+比较 $k=2,\ldots,8$ 的轮廓系数、Calinski--Harabasz 指数、Davies--Bouldin 指数、最小簇规模和100次完整销售年度块重采样ARI。综合可解释性、无微小簇和稳定性选择 $k=5$，再依据簇中心的峰值月份与四季占比一对一命名为春季型、初夏型、夏秋型、冬季型和常年型。
 
-最终边须同时满足：MIC 超过零分布阈值、精度矩阵对应元素非零、14 日移动块 Bootstrap 中同号出现率不低于 70\%。正值称为潜在互补/同步，负值称为潜在替代。
+\subsection{四类关系指标与可信度}
+
+为避免用一个系数概括不同含义，同时计算：
+\begin{enumerate}
+  \item 12个月季节指数的Pearson相关，用于判断旺淡季曲线是否一致；
+  \item 日销量取 $\log(1+Y)$ 并减去年月均值后的分季节Spearman相关，用于判断同一季节内是否同向波动；
+  \item 每日销量份额的分季节Spearman相关，用于区分总量同涨与销售结构竞争；
+  \item 正销售日集合的Jaccard系数
+  \begin{equation}
+  J_{ij}=\frac{|A_i\cap A_j|}{|A_i\cup A_j|},
+  \end{equation}
+  用于衡量两者是否经常同期销售。
+\end{enumerate}
+
+六品类15对、五季节簇10对和64单品2016对均完整保留。对品类与簇关系完整执行200次7日移动块Bootstrap；单品层对达到 $|\rho|\ge0.30$ 的论文候选关系执行相同Bootstrap，其余关系保留点估计但不伪造置信区间。所有$p$值按指标和季节分别作BH校正。正文将 $|\rho|\ge0.30$ 且95\%区间不跨0的关系称为“较明确关系”，但不据此删除弱关系。
 
 \section{结果与解释}
 
-\subsection{销量分布}
+\subsection{销量分布和季节规律}
 
-六品类的参数分布均通过 KS 检验。表\ref{tab:dist} 表明，水生根茎类、花叶类、花菜类和茄类更符合 Gamma 分布，辣椒类与食用菌更符合 Lognormal 分布。47 个高活跃单品中 24 个接受参数分布，23 个需回退 KDE，说明单品层的分布异质性明显高于品类层。
+六品类的零销量比例均较低，正销量分布全部通过KS检验。其中水生根茎类、花叶类、花菜类和茄类以Gamma分布的AIC最小，辣椒类和食用菌以Lognormal分布最优。64个单品与6个品类共70个对象中，45个接受参数分布，25个回退KDE，说明单品层的分布异质性明显高于品类层。
 
-\begin{table}[htbp]
-\centering
-\caption{六品类正销量条件分布}
-\label{tab:dist}
-\begin{tabular}{lrrrr}
-\toprule
-品类 & 零销量比例/\% & 均值/kg & 最优分布 & KS $p$ 值\\
-\midrule
-水生根茎类 & 0.91 & 37.08 & Gamma & 0.49\\
-花叶类 & 0.91 & 181.42 & Gamma & 0.27\\
-花菜类 & 1.00 & 38.16 & Gamma & 0.33\\
-茄类 & 4.11 & 20.50 & Gamma & 0.55\\
-辣椒类 & 0.91 & 83.69 & Lognormal & 0.51\\
-食用菌 & 0.91 & 69.53 & Lognormal & 0.52\\
-\bottomrule
-\end{tabular}
-\end{table}
+品类峰值月份显示：水生根茎类和食用菌在1月达到峰值，辣椒类在2月达到峰值；花叶类和花菜类在8月达到峰值，茄类在7月达到峰值。水生根茎类的季节集中度最高，冬季销量占比明显高于夏季；花叶类和辣椒类的全年分布相对均衡。
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.98\textwidth]{../outputs/figures/fig_q1_category_distributions.pdf}
-\caption{六品类的零质量与正销量条件分布。}
-\end{figure}
+\subsection{聚类结果}
 
-\subsection{单品稀疏网络}
+修正后的 $k=5$ 轮廓系数为0.23，CH指数为15.79，DB指数为1.48，完整销售年度块重采样平均ARI为0.57。五簇规模分别为7、8、11、17和21，没有单例或极小簇。按语义排序，初夏型11个、冬季型7个、常年型21个、春季型8个、夏秋型17个；其主季销量占比分别约为62.71\%、70.81\%、33.19\%（夏季为常年型的相对最高季）、54.77\%和41.15\%。这些结果说明64个长期销售单品仍存在清晰的季节供给差异，但ARI处于中等水平，簇边界不是绝对分类。
 
-单品层 MIC 99\% 阈值为 0.71，共得到 18 条候选边。EBIC 选择的正则强度为 0.11，对应精度矩阵最小特征值为 0.16，满足正定要求。100 次移动块 Bootstrap 均成功，最终得到 10 条稳定边，其中正边 6 条、负边 4 条；47 个节点中 12 个进入连通网络。
+\subsection{品类和簇间关系}
 
-绝对条件相关最大的正边为“姬菇(1)--海鲜菇(1)”（0.31，稳定率 100\%）。主要负边为“海鲜菇(1)--长线茄”（-0.17）、“枝江红菜苔--灯笼椒(1)”（-0.12）和“姬菇(1)--长线茄”（-0.12），三者稳定率均为 100\%。这些结果说明在控制其他高活跃单品后，少数商品仍存在稳定的短期同步或反向变化，但不能据此断言消费者层面的因果替代。
+六品类全年去年月效应后的销量相关均表现为同向，其中花叶类--辣椒类为0.69，花叶类--食用菌为0.69，辣椒类--食用菌为0.65，Bootstrap区间均不跨0。这说明在共同客流、节假日或短期经营节奏变化下，多数品类总销量会同时增减。
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.88\textwidth]{../outputs/figures/fig_q1_mic_graphical_lasso.pdf}
-\caption{MIC 候选关系与 Graphical Lasso 条件关联的双重筛选。}
-\end{figure}
+但销量份额给出不同信息。例如花叶类--食用菌全年份额相关为$-0.54$，水生根茎类--花叶类为$-0.46$。因此“总量同涨”并不等于结构互补：两类商品可以在客流上升时同时卖得更多，同时在当日蔬菜总销量构成中此消彼长。份额相关受到各份额和为1的组成约束，只解释为销售结构竞争，不解释为价格替代或因果替代。
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.92\textwidth]{../outputs/figures/fig_q1_sku_network.pdf}
-\caption{高活跃单品的稳定稀疏条件关联网络。孤立节点未绘制。}
-\end{figure}
+簇间关系进一步表明，常年型与冬季型全年销量相关为0.39，常年型与夏秋型为0.32，初夏型与常年型为0.31，均具有稳定同向波动。常年型--夏秋型全年份额相关为$-0.72$，初夏型--冬季型为$-0.79$，说明不同季节供给组在总销量结构上具有明显轮换。
 
-\subsection{品类层关系}
+\subsection{单品层关系}
 
-品类层最终保留两条稳定正边：“花菜类--辣椒类”的条件相关为 0.33、稳定率 100\%；“花菜类--食用菌”的条件相关为 0.06、稳定率 75.50\%。后一条边较弱且靠近稳定性门槛，只作辅助关系，不应过度解释。
+完整机器表保留2016对单品关系。全年销量相关中有18对满足 $|\rho|\ge0.30$ 且区间不跨0。较强的正向关系包括“西兰花--净藕(1)”（$\rho=0.44$，95\%区间$[0.38,0.52]$）、“西兰花--芜湖青椒(1)”（0.44，$[0.38,0.51]$）和“七彩椒(1)--红灯笼椒(1)”（0.43，$[0.33,0.52]$）。较明确的负向关系为“西峡花菇(1)--西峡香菇(1)”（$-0.33$，$[-0.43,-0.23]$）。这些关系表示共同销售节奏或结构分化，并不能直接推导购物篮互补、价格弹性或因果替代。
 
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.82\textwidth]{../outputs/figures/fig_q1_category_partial_matrix.pdf}
-\caption{品类层条件相关矩阵。星号表示同时通过 MIC 与 Bootstrap 稳定性筛选。}
-\end{figure}
+\section{模型评价}
 
-\section{模型检验}
+模型的优点是保留季节性单品，以月份画像直接刻画题意；k的选择同时考虑分离度、簇规模和跨年度稳定性；总量相关、份额相关和活跃期重合分别回答不同的“关系”；完整2016对母表保证弱关系和跨品类关系不被遗漏。主要局限是无销售记录仍可能混合无需求、缺货和未陈列；三个销售年度对长期稳定性判断仍有限；份额相关存在组成数据的天然负相关约束；所有关系均为统计关联而非因果效应。
 
-以与最终网络相同边数截取原始销量 Spearman 强边，和最终稳定边的 Jaccard 为 0，说明去除共同时间结构后，直接关联发生实质变化。Graphical Lasso 正则强度乘以 0.8、1.0、1.2 时，最终候选交集保持 10 条不变；Bootstrap 门槛由 70\% 提高到 80\% 时仍保留 8 条边。MIC 阈值是最敏感的参数：零分布分位从 99.0\% 调至 97.5\% 时边数增至 15，调至 99.5\% 时降至 3。因此本文只将 99\% 阈值下的 10 条边视为主结果，并公开敏感性边界。
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.95\textwidth]{../outputs/figures/fig_q1_robustness.pdf}
-\caption{EBIC 正则路径与时间块 Bootstrap 稳定性证据。}
-\end{figure}
-
-\section{模型评价与局限}
-
-模型的优点在于：先去时间结构再估计网络，降低伪相关；MIC 与条件相关分别覆盖非线性发现和直接关系压缩；EBIC、循环移位零分布与移动块 Bootstrap 构成完整验证链；稀疏网络便于解释并可传递给后续单品组合模型。
-
-局限性包括：无销售记录可能混合零需求与未上架/缺货；近似 MIC 不等同于严格 MICe；Graphical Lasso 无法排除价格、促销、天气、客流和陈列等未观测混杂；活动度筛选使结论不覆盖短生命周期单品。故本问的最终结论是稳定的潜在关联，而非需求弹性或因果替代系数。
-
-\begin{thebibliography}{9}
-\bibitem{cleveland1990} Cleveland R B, Cleveland W S, McRae J E, Terpenning I. STL: A seasonal-trend decomposition procedure based on LOESS. \emph{Journal of Official Statistics}, 1990, 6: 3--73.
-\bibitem{reshef2011} Reshef D N, Reshef Y A, Finucane H K, et al. Detecting novel associations in large data sets. \emph{Science}, 2011, 334: 1518--1524. DOI: 10.1126/science.1205438.
-\bibitem{friedman2008} Friedman J, Hastie T, Tibshirani R. Sparse inverse covariance estimation with the graphical lasso. \emph{Biostatistics}, 2008, 9(3): 432--441. DOI: 10.1093/biostatistics/kxm045.
-\end{thebibliography}
+综上，问题一的最终解释不是“蔬菜之间基本没有关系”，而是：蔬菜销量具有显著季节分型；多数品类在短期总量上共同涨落，但在销量结构中可能竞争；单品关系具有明显异质性，应在品类、季节簇和具体单品三个尺度分别解释。
 
 \end{document}

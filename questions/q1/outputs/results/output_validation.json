@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "check_count": 42,
-  "passed": 42,
+  "check_count": 71,
+  "passed": 71,
   "failed": 0,
   "checks": [
     {
@@ -34,6 +34,10 @@
     },
     {
       "check": "tab_q1_cluster_profiles.csv exists and is nontrivial",
+      "passed": true
+    },
+    {
+      "check": "tab_q1_all_sku_pair_relationships.csv exists and is nontrivial",
       "passed": true
     },
     {
@@ -89,6 +93,14 @@
       "passed": true
     },
     {
+      "check": "Each SKU's 12 monthly sales proportions sum to 1",
+      "passed": true
+    },
+    {
+      "check": "SKU monthly active rates are in [0, 1]",
+      "passed": true
+    },
+    {
       "check": "k range starts at 2",
       "passed": true
     },
@@ -113,11 +125,59 @@
       "passed": true
     },
     {
+      "check": "Five cluster names are unique",
+      "passed": true
+    },
+    {
       "check": "No empty clusters",
       "passed": true
     },
     {
-      "check": "Seasonal proportions within 0.5 of 1.0 per cluster (max diff: 0.397)",
+      "check": "Cluster seasonal proportions sum to 1",
+      "passed": true
+    },
+    {
+      "check": "Complete SKU relation table has 2016 pairs",
+      "passed": true
+    },
+    {
+      "check": "Strong sales relationships in 春季 have bootstrap CIs",
+      "passed": true
+    },
+    {
+      "check": "Strong sales relationships in 夏季 have bootstrap CIs",
+      "passed": true
+    },
+    {
+      "check": "Strong sales relationships in 秋季 have bootstrap CIs",
+      "passed": true
+    },
+    {
+      "check": "Strong sales relationships in 冬季 have bootstrap CIs",
+      "passed": true
+    },
+    {
+      "check": "Strong sales relationships in 全年 have bootstrap CIs",
+      "passed": true
+    },
+    {
+      "check": "Strong share relationships in 春季 have bootstrap CIs",
+      "passed": true
+    },
+    {
+      "check": "Strong share relationships in 夏季 have bootstrap CIs",
+      "passed": true
+    },
+    {
+      "check": "Strong share relationships in 秋季 have bootstrap CIs",
+      "passed": true
+    },
+    {
+      "check": "Strong share relationships in 冬季 have bootstrap CIs",
+      "passed": true
+    },
+    {
+      "check": "Strong share relationships in 全年 have bootstrap CIs",
       "passed": true
     },
     {
@@ -153,6 +213,54 @@
       "passed": true
     },
     {
+      "check": "fig_q1_seasonal_index_curves.png/.pdf exist",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_seasonal_index_curves.png dimensions >= 1200x800",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_k_selection.png/.pdf exist",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_k_selection.png dimensions >= 1200x800",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_cluster_profiles.png/.pdf exist",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_cluster_profiles.png dimensions >= 1200x800",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_category_relationships.png/.pdf exist",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_category_relationships.png dimensions >= 1200x800",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_cluster_relationships.png/.pdf exist",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_cluster_relationships.png dimensions >= 1200x800",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_representative_pairs.png/.pdf exist",
+      "passed": true
+    },
+    {
+      "check": "fig_q1_representative_pairs.png dimensions >= 1200x800",
+      "passed": true
+    },
+    {
       "check": "Summary has 'distribution' section",
       "passed": true
     },
@@ -170,6 +278,14 @@
     },
     {
       "check": "Legacy MIC+Graphical Lasso code preserved as appendix",
+      "passed": true
+    },
+    {
+      "check": "Paper uses redesigned main route",
+      "passed": true
+    },
+    {
+      "check": "Paper no longer states the legacy 47-SKU headline",
       "passed": true
     }
   ]

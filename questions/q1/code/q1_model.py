@@ -46,10 +46,9 @@ from q1_clustering import (  # noqa: E402
     cluster_and_name,
 )
 from q1_relationships import (  # noqa: E402
+    compute_entity_relationships,
     compute_category_relationships,
-    compute_within_category_relationships,
     compute_cluster_relationships,
-    compute_within_cluster_relationships,
     build_correlation_matrix,
     build_seasonal_matrices,
     seasonal_index_correlation,
@@ -78,7 +77,8 @@ class Config:
     # Relationship bootstrap
     relationship_bootstrap_reps: int = 200
     bootstrap_block_length: int = 7
-    bootstrap_only_full_year: bool = True  # Only bootstrap full-year for speed
+    bootstrap_only_full_year: bool = False
+    sku_bootstrap_min_abs_r: float = 0.30
 
 
 def parse_args() -> argparse.Namespace:
@@ -211,7 +211,7 @@ def build_activity_table(sku: pd.DataFrame, cfg: Config) -> pd.DataFrame:
 
 
 def build_sku_daily_pivot(sku: pd.DataFrame, selected_codes: set[str]) -> pd.DataFrame:
-    """Build SKU × date pivot for selected SKUs over full date range."""
+    """Build SKU × date pivot; zero inside each SKU span, NaN outside it."""
     full_index = pd.date_range(sku["date"].min(), sku["date"].max(), freq="D")
     sku_filtered = sku[sku["sku_code"].isin(selected_codes)]
     pivot = sku_filtered.pivot_table(
@@ -220,6 +220,12 @@ def build_sku_daily_pivot(sku: pd.DataFrame, selected_codes: set[str]) -> pd.Dat
     )
     pivot = pivot.reindex(full_index, fill_value=0.0)
     pivot.index = pd.to_datetime(pivot.index)
+    spans = (
+        sku_filtered.groupby("sku_code")["date"].agg(["min", "max"])
+    )
+    for code in pivot.columns:
+        first, last = spans.loc[str(code), ["min", "max"]]
+        pivot.loc[(pivot.index < first) | (pivot.index > last), code] = np.nan
     return pivot.sort_index()
 
 
@@ -329,6 +335,10 @@ def main() -> None:
     # SKU profiles
     sku_filtered = sku[sku["sku_code"].isin(selected_codes)]
     sku_monthly = compute_monthly_profile(sku_filtered, "sku_code")
+    sku_monthly = sku_monthly.merge(
+        sku_filtered[["sku_code", "sku_name"]].drop_duplicates(),
+        on="sku_code", how="left",
+    )
     sku_seasonal = compute_seasonal_profile(sku_monthly, "sku_code")
     sku_peak = compute_peak_metrics(sku_monthly, "sku_code")
     sku_seasonal_index = build_seasonal_index_table(
@@ -338,11 +348,9 @@ def main() -> None:
     write_csv(sku_seasonal_index, tables / "tab_q1_sku_seasonal_index.csv")
     write_csv(sku_peak, tables / "tab_q1_sku_peak_metrics.csv")
 
-    # Merge SKU names into monthly for clustering label readability
-    sku_monthly_named = sku_monthly.merge(
-        sku_filtered[["sku_code", "sku_name"]].drop_duplicates(),
-        on="sku_code", how="left",
-    )
+    # The readable SKU name was merged above; retain one canonical frame for
+    # clustering labels and the subsequent relationship analysis.
+    sku_monthly_named = sku_monthly
 
     # ---- Clustering ----
     features_df, feature_matrix = build_clustering_features(
@@ -422,27 +430,40 @@ def main() -> None:
     cat_jaccard = active_day_jaccard(category_daily)
     write_csv(cat_jaccard, tables / "tab_q1_category_active_jaccard.csv")
 
-    # Level B: Within each category
-    print("Computing within-category relationships...")
+    # Full 64-SKU relationship mother table.  All 2016 pairs are retained;
+    # block-bootstrap CIs are computed for paper-highlight candidates only.
+    print("Computing all-SKU relationships...")
     cat_assignments = {
         str(row.sku_code): str(row.category_name)
         for row in activity.loc[activity["included"]].itertuples(index=False)
     }
-    within_cat_rels = compute_within_category_relationships(
-        sku_daily, sku_monthly_named, cat_assignments,
+    sku_monthly_dict = {}
+    for code in sorted(selected_codes):
+        rows = sku_monthly_named[sku_monthly_named["sku_code"] == code]
+        sku_monthly_dict[code] = (
+            rows.set_index("month")["seasonal_index"]
+            .reindex(range(1, 13), fill_value=0.0).to_numpy()
+        )
+    all_sku_rels = compute_entity_relationships(
+        sku_daily, sku_monthly_dict, level="all_sku",
         bootstrap_reps=cfg.relationship_bootstrap_reps,
         seed=cfg.random_seed,
-        bootstrap_only_full_year=cfg.bootstrap_only_full_year,
+        bootstrap_only_full_year=False,
+        bootstrap_min_abs_r=cfg.sku_bootstrap_min_abs_r,
     )
-    all_within_cat = []
-    for cat, df in within_cat_rels.items():
-        if not df.empty:
-            all_within_cat.append(df)
-    if all_within_cat:
-        write_csv(
-            pd.concat(all_within_cat, ignore_index=True),
-            tables / "tab_q1_within_category_pair_relationships.csv",
+    write_csv(all_sku_rels, tables / "tab_q1_all_sku_pair_relationships.csv")
+
+    # Level B: category-internal view, filtered from the mother table.
+    within_cat = all_sku_rels[
+        all_sku_rels.apply(
+            lambda r: cat_assignments.get(r["source"]) == cat_assignments.get(r["target"]),
+            axis=1,
         )
+    ].copy()
+    within_cat["level"] = within_cat["source"].map(
+        lambda code: f"within_{cat_assignments[code]}"
+    )
+    write_csv(within_cat, tables / "tab_q1_within_category_pair_relationships.csv")
 
     # Level C: Between clusters
     print("Computing cluster relationships...")
@@ -469,23 +490,17 @@ def main() -> None:
             tables / f"tab_q1_cluster_matrix_{key}.csv",
         )
 
-    # Level D: Within each cluster
-    print("Computing within-cluster relationships...")
-    within_cluster_rels = compute_within_cluster_relationships(
-        sku_daily, sku_monthly_named, cluster_assignments,
-        bootstrap_reps=cfg.relationship_bootstrap_reps,
-        seed=cfg.random_seed,
-        bootstrap_only_full_year=cfg.bootstrap_only_full_year,
-    )
-    all_within_cluster = []
-    for cid, df in within_cluster_rels.items():
-        if not df.empty:
-            all_within_cluster.append(df)
-    if all_within_cluster:
-        write_csv(
-            pd.concat(all_within_cluster, ignore_index=True),
-            tables / "tab_q1_within_cluster_pair_relationships.csv",
+    # Level D: cluster-internal view, also filtered from the mother table.
+    within_cluster = all_sku_rels[
+        all_sku_rels.apply(
+            lambda r: cluster_assignments.get(r["source"]) == cluster_assignments.get(r["target"]),
+            axis=1,
         )
+    ].copy()
+    within_cluster["level"] = within_cluster["source"].map(
+        lambda code: f"within_cluster_{cluster_assignments[code]}"
+    )
+    write_csv(within_cluster, tables / "tab_q1_within_cluster_pair_relationships.csv")
 
     # ---- Summary JSON ----
     try:
@@ -532,9 +547,10 @@ def main() -> None:
         },
         "relationships": {
             "category_pairs": int(len(cat_rels)),
-            "within_category_categories": list(within_cat_rels.keys()),
+            "all_sku_pairs": int(len(all_sku_rels)),
+            "within_category_categories": sorted(set(cat_assignments.values())),
             "cluster_pairs": int(len(cluster_rels)),
-            "within_cluster_ids": list(within_cluster_rels.keys()),
+            "within_cluster_ids": sorted(set(cluster_assignments.values())),
         },
     }
     save_json(summary, results / "q1_summary.json")

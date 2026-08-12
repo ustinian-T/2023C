@@ -11,6 +11,7 @@
     "k_bootstrap_reps": 100,
     "relationship_bootstrap_reps": 200,
     "bootstrap_block_length": 7,
-    "bootstrap_only_full_year": true
+    "bootstrap_only_full_year": false,
+    "sku_bootstrap_min_abs_r": 0.3
   }
 }
