@@ -1,0 +1,3 @@
+﻿model_variant,description,weekly_expected_profit_yuan,weekly_worst10pct_mean_profit_yuan,mean_stockout_probability,mean_markup_rate
+A_baseline,历史中位加价+中位需求补货,2682.990140120532,-662.1841686441525,,
+B_improved,商誉惩罚0.1+参考惩罚80.0+保守弹性(2品类调整),4125.826785141472,323.8122467481701,0.6099206349206349,0.8915594087492683

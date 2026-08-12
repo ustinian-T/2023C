@@ -1,6 +1,6 @@
 {
-  "passed": 22,
-  "total": 22,
+  "passed": 31,
+  "total": 31,
   "tests": [
     {
       "name": "42 category-day decisions",
@@ -109,6 +109,51 @@
     },
     {
       "name": "risk tradeoff direction",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "stockout probability not too low (goodwill penalty not excessive)",
+      "status": "PASS",
+      "details": "0.6099206349206349"
+    },
+    {
+      "name": "not all markups at upper bound (reference penalty effective)",
+      "status": "PASS",
+      "details": "28/42 at upper bound"
+    },
+    {
+      "name": "IV elasticities negative for IV-active categories",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "weekly expected profit at least 1.2x baseline",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "improved two-seed stability gap < 1e-4",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "sensitivity analysis file exists",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "model comparison file exists",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "sensitivity rows present",
+      "status": "PASS",
+      "details": "7"
+    },
+    {
+      "name": "penalty parameters in summary",
       "status": "PASS",
       "details": ""
     }

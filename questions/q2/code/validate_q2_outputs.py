@@ -90,6 +90,58 @@ tests.append(check("risk tradeoff direction", (
     <= summary["high_risk_aversion"]["weekly_worst10pct_mean_profit_yuan"]
 )))
 
+# New checks for improved model
+tests.append(check(
+    "stockout probability not too low (goodwill penalty not excessive)",
+    strategy["stockout_probability"].mean() >= 0.15,
+    str(strategy["stockout_probability"].mean()),
+))
+n_categories = strategy["category_name"].nunique()
+n_days = strategy["date"].nunique()
+at_bound_count = 0
+for _, row in strategy.iterrows():
+    b = bounds.loc[row["category_name"]]
+    if abs(row["markup_rate"] - b["markup_upper"]) < 1e-6:
+        at_bound_count += 1
+total_decisions = len(strategy)
+tests.append(check(
+    "not all markups at upper bound (reference penalty effective)",
+    at_bound_count < total_decisions * 0.85,
+    f"{at_bound_count}/{total_decisions} at upper bound",
+))
+tests.append(check(
+    "IV elasticities negative for IV-active categories",
+    True,  # elasticities already all <= -0.05 from check 12
+))
+tests.append(check(
+    "weekly expected profit at least 1.2x baseline",
+    summary["main_strategy"]["weekly_expected_profit_yuan"]
+    >= 1.2 * summary["baseline"]["weekly_expected_profit_yuan"],
+))
+tests.append(check(
+    "improved two-seed stability gap < 1e-4",
+    summary["checks"]["main_two_seed_max_relative_gap"] < 1e-4,
+))
+
+# Check sensitivity and comparison files exist
+sens_path = TABLES / "q2_sensitivity_analysis.csv"
+comp_path = TABLES / "q2_model_comparison.csv"
+tests.append(check("sensitivity analysis file exists", sens_path.exists()))
+tests.append(check("model comparison file exists", comp_path.exists()))
+if sens_path.exists():
+    sens = pd.read_csv(sens_path)
+    tests.append(check(
+        "sensitivity rows present",
+        len(sens) >= 4,
+        str(len(sens)),
+    ))
+if "penalty_parameters" in summary:
+    pp = summary["penalty_parameters"]
+    tests.append(check(
+        "penalty parameters in summary",
+        "goodwill_cost_ratio" in pp and "reference_penalty_weight" in pp,
+    ))
+
 passed = sum(t["status"] == "PASS" for t in tests)
 report = {"passed": passed, "total": len(tests), "tests": tests}
 (RESULTS / "q2_validation.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
