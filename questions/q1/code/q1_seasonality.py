@@ -104,8 +104,8 @@ def compute_monthly_profile(
     daily_positive = (
         df.groupby([entity_col, "_sales_year", "_month"], as_index=False)
         .agg(
-            active_days=("gross_sales_qty", lambda x: int((x > 0).sum())),
-            total_days=("gross_sales_qty", "size"),
+            active_days=(qty_col, lambda x: int((x > 0).sum())),
+            total_days=(qty_col, "size"),
         )
     )
     daily_positive["active_rate"] = daily_positive["active_days"] / daily_positive["total_days"]

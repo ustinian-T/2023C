@@ -33,17 +33,13 @@ _code_dir = Path(__file__).resolve().parent
 if str(_code_dir) not in sys.path:
     sys.path.insert(0, str(_code_dir))
 
-from q1_distribution import distribution_analysis, zero_inflated_summary  # noqa: E402
+from q1_distribution import distribution_analysis  # noqa: E402
 from q1_seasonality import (  # noqa: E402
-    MONTH_TO_SEASON,
-    SEASON_ORDER,
-    MONTH_ORDER,
     compute_monthly_profile,
     compute_seasonal_profile,
     compute_peak_metrics,
     build_seasonal_index_table,
     build_clustering_features,
-    compute_entity_daily_sales,
 )
 from q1_clustering import (  # noqa: E402
     evaluate_k_range,
@@ -342,16 +338,15 @@ def main() -> None:
     write_csv(sku_seasonal_index, tables / "tab_q1_sku_seasonal_index.csv")
     write_csv(sku_peak, tables / "tab_q1_sku_peak_metrics.csv")
 
+    # Merge SKU names into monthly for clustering label readability
+    sku_monthly_named = sku_monthly.merge(
+        sku_filtered[["sku_code", "sku_name"]].drop_duplicates(),
+        on="sku_code", how="left",
+    )
+
     # ---- Clustering ----
     features_df, feature_matrix = build_clustering_features(
         sku_monthly, "sku_code"
-    )
-    # Entity names for cluster labeling
-    sku_names = (
-        sku_filtered[["sku_code", "sku_name"]]
-        .drop_duplicates()
-        .set_index("sku_code")["sku_name"]
-        .to_dict()
     )
 
     # K evaluation
@@ -367,10 +362,10 @@ def main() -> None:
     )
     write_csv(k_eval, tables / "tab_q1_cluster_k_selection.csv")
 
-    # Cluster with k=5
+    # Cluster with k=5 (use named monthly for readable representative SKUs)
     sku_clusters, cluster_profiles = cluster_and_name(
         feature_matrix,
-        sku_monthly,
+        sku_monthly_named,
         "sku_code",
         "sku_name",
         k=cfg.k_selected,
@@ -387,12 +382,7 @@ def main() -> None:
     )
 
     # ---- Relationships ----
-    # Merge SKU names into sku_monthly for entity_name_col
-    sku_monthly_named = sku_monthly.merge(
-        sku_filtered[["sku_code", "sku_name"]].drop_duplicates(),
-        on="sku_code",
-        how="left",
-    )
+    # (sku_monthly_named already created before clustering above)
 
     # Level A: Six categories
     print("Computing category relationships...")
@@ -498,13 +488,13 @@ def main() -> None:
         )
 
     # ---- Summary JSON ----
+    try:
+        rel_path = str(input_dir.relative_to(root.parents[1])).replace("\\", "/")
+    except ValueError:
+        rel_path = str(input_dir)
     summary = {
         "model": "Two-part distribution + seasonal profiling + K-means clustering + 4-level relationship analysis",
-        "input_directory": (
-            str(input_dir.relative_to(root.parents[1])).replace("\\", "/")
-            if input_dir.is_relative_to(root.parents[1])
-            else str(input_dir)
-        ),
+        "input_directory": rel_path,
         "config": asdict(cfg),
         "integrity": integrity,
         "all_sku_count": int(activity.shape[0]),

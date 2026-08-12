@@ -22,10 +22,6 @@ from sklearn.metrics import (
 from q1_seasonality import (
     MONTH_TO_SEASON,
     SEASON_ORDER,
-    MONTH_ORDER,
-    compute_monthly_profile,
-    compute_seasonal_profile,
-    build_clustering_features,
 )
 
 

@@ -30,9 +30,6 @@ from scipy import stats
 from q1_seasonality import (
     MONTH_TO_SEASON,
     SEASON_ORDER,
-    MONTH_ORDER,
-    compute_entity_daily_sales,
-    compute_monthly_profile,
 )
 
 # ---------------------------------------------------------------------------
@@ -536,14 +533,15 @@ def compute_category_relationships(
 ) -> pd.DataFrame:
     """Compute all 15 category pairs with full relationship indicators."""
     # Build monthly profile dict
+    entity_col = category_monthly.columns[0]  # entity column is first per convention
     monthly_dict = {}
-    for cat in category_monthly.iloc[:, 0].unique():
-        cat_data = category_monthly[category_monthly.iloc[:, 0] == cat]
+    for ent in category_monthly[entity_col].unique():
+        ent_data = category_monthly[category_monthly[entity_col] == ent]
         indices = np.zeros(12)
-        for _, row in cat_data.iterrows():
+        for _, row in ent_data.iterrows():
             m = int(row["month"]) - 1
             indices[m] = row.get("seasonal_index", 1.0)
-        monthly_dict[str(cat)] = indices
+        monthly_dict[str(ent)] = indices
 
     return compute_entity_relationships(
         category_daily, monthly_dict,
@@ -567,6 +565,7 @@ def compute_within_category_relationships(
     bootstrap_only_full_year: bool = True,
 ) -> dict[str, pd.DataFrame]:
     """For each category, compute relationships among its SKUs."""
+    entity_col = sku_monthly.columns[0]
     results = {}
     for cat, skus in _group_by_category(category_assignments):
         cat_skus = [s for s in skus if s in sku_daily.columns]
@@ -576,7 +575,7 @@ def compute_within_category_relationships(
 
         monthly_dict = {}
         for sku in cat_skus:
-            sku_data = sku_monthly[sku_monthly.iloc[:, 0] == sku]
+            sku_data = sku_monthly[sku_monthly[entity_col] == sku]
             indices = np.zeros(12)
             for _, row in sku_data.iterrows():
                 m = int(row["month"]) - 1
@@ -627,12 +626,13 @@ def compute_cluster_relationships(
     cluster_pivot = pd.DataFrame(cluster_daily)
 
     # Build monthly profiles for each cluster
+    entity_col = sku_monthly.columns[0]
     monthly_dict = {}
     for cid_str in cluster_pivot.columns:
         # Aggregate monthly profile across SKUs in this cluster
         cid = int(cid_str.split("_")[1])
         cluster_skus = [s for s, c in cluster_assignments.items() if c == cid]
-        cluster_monthly = sku_monthly[sku_monthly.iloc[:, 0].isin(cluster_skus)]
+        cluster_monthly = sku_monthly[sku_monthly[entity_col].isin(cluster_skus)]
         profile = (
             cluster_monthly.groupby("month")["seasonal_index"]
             .mean()
@@ -668,6 +668,7 @@ def compute_within_cluster_relationships(
     for sku, cid in cluster_assignments.items():
         clusters.setdefault(cid, []).append(sku)
 
+    entity_col = sku_monthly.columns[0]
     for cid, skus in clusters.items():
         if len(skus) < 2:
             continue
@@ -678,7 +679,7 @@ def compute_within_cluster_relationships(
         cid_daily = sku_daily[cid_skus]
         monthly_dict = {}
         for sku in cid_skus:
-            sku_data = sku_monthly[sku_monthly.iloc[:, 0] == sku]
+            sku_data = sku_monthly[sku_monthly[entity_col] == sku]
             indices = np.zeros(12)
             for _, row in sku_data.iterrows():
                 m = int(row["month"]) - 1
