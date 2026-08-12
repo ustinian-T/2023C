@@ -135,15 +135,15 @@
       "passed": true
     },
     {
-      "check": "result workbook exists",
+      "check": "archived result workbook exists",
       "passed": true
     },
     {
-      "check": "result workbook is a valid XLSX zip container",
+      "check": "archived result workbook is a valid XLSX zip container",
       "passed": true
     },
     {
-      "check": "result workbook contains workbook.xml",
+      "check": "archived result workbook contains workbook.xml",
       "passed": true
     },
     {
@@ -211,7 +211,9 @@
       ]
     }
   ],
-  "environment_limitations": [
-    "No xelatex/lualatex/tectonic executable was available; report/main.tex was not compiled."
-  ]
+  "report_compilation": {
+    "checked": false,
+    "available_engines": [],
+    "note": "LaTeX compilation is outside this validator; compile report/main.tex separately with a Chinese-capable engine."
+  }
 }

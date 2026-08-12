@@ -69,4 +69,4 @@ EBIC 在正则强度 0.1137 处最小；对应精度矩阵最小特征值为 0.1
 
 ## 6. 交付文件自动校验
 
-`code/validate_q1_outputs.py` 已执行，38 项跨文件检查全部通过，报告保存于 `outputs/results/output_validation.json`。检查覆盖边数与符号、MIC/Bootstrap 阈值、正定性、敏感性、六组 PNG/PDF 成对导出、PNG 尺寸、XLSX 容器完整性和论文占位符。当前环境未安装 XeLaTeX、LuaLaTeX 或 tectonic，因此 `report/main.tex` 尚未在本机编译成 PDF；这是唯一记录的环境限制。
+`code/validate_q1_outputs.py` 已执行，38 项跨文件检查全部通过，报告保存于 `outputs/results/output_validation.json`。检查覆盖边数与符号、MIC/Bootstrap 阈值、正定性、敏感性、六组 PNG/PDF 成对导出、PNG 尺寸、归档 XLSX 容器完整性和论文占位符。该验证器不编译 LaTeX；`report/main.tex` 需另行使用支持中文的 TeX 引擎编译。`outputs/workbooks/q1_model_results.xlsx` 是第一问完成时保留的归档总表，当前模型流水线不自动重建它，可复现结果源为 `outputs/tables/` 与 `outputs/results/`。

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import zipfile
 from pathlib import Path
 
@@ -75,22 +76,27 @@ def main() -> None:
         image_details.append({"base": base, "width": width, "height": height, "dpi": dpi})
 
     workbook = WORKBOOKS / "q1_model_results.xlsx"
-    check(workbook.exists() and workbook.stat().st_size > 20_000, "result workbook exists", checks)
-    check(zipfile.is_zipfile(workbook), "result workbook is a valid XLSX zip container", checks)
+    check(workbook.exists() and workbook.stat().st_size > 20_000, "archived result workbook exists", checks)
+    check(zipfile.is_zipfile(workbook), "archived result workbook is a valid XLSX zip container", checks)
     with zipfile.ZipFile(workbook) as archive:
-        check("xl/workbook.xml" in archive.namelist(), "result workbook contains workbook.xml", checks)
+        check("xl/workbook.xml" in archive.namelist(), "archived result workbook contains workbook.xml", checks)
 
     paper = REPORT
     check(paper.exists() and paper.stat().st_size > 5_000, "report/main.tex exists and is substantive", checks)
     paper_text = paper.read_text(encoding="utf-8")
     check("待补充" not in paper_text and "TODO" not in paper_text, "paper has no placeholders", checks)
 
+    tex_engines = [name for name in ("xelatex", "lualatex", "tectonic") if shutil.which(name)]
     report = {
         "status": "PASS",
         "check_count": len(checks),
         "checks": checks,
         "image_details": image_details,
-        "environment_limitations": ["No xelatex/lualatex/tectonic executable was available; report/main.tex was not compiled."],
+        "report_compilation": {
+            "checked": False,
+            "available_engines": tex_engines,
+            "note": "LaTeX compilation is outside this validator; compile report/main.tex separately with a Chinese-capable engine.",
+        },
     }
     (RESULTS / "output_validation.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"

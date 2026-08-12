@@ -32,7 +32,7 @@
 
 ## 4. 运行方法
 
-Python 依赖列于 `requirements.txt`。在当前目录运行：
+Python 依赖列于 `requirements.txt`。从仓库根目录运行：
 
 ```powershell
 python questions\q1\code\q1_model.py
@@ -57,7 +57,7 @@ MATLAB 只读取 Python 结果表并绘图，不重新拟合模型。每幅图�
 - `outputs/figures/`：6 组 PNG/PDF 学术图。
 - `outputs/results/q1_summary.json`：机器可读的关键结果。
 - `outputs/results/validation_report.md`：结果追踪、验证与局限。
-- `outputs/workbooks/q1_model_results.xlsx`：格式化结果总表；其中数字 SKU 以 `SKU-` 前缀显示，避免 Excel 将标识符转成科学计数法。
+- `outputs/workbooks/q1_model_results.xlsx`：第一问完成时迁移保留的格式化结果总表归档，其中数字 SKU 以 `SKU-` 前缀显示，避免 Excel 将标识符转成科学计数法。当前代码不会自动重建该工作簿；重新运行模型时，以 `outputs/tables/` 和 `outputs/results/` 为可复现结果源。
 - `report/main.tex`：Q1 论文式正文。
 - `code/validate_q1_outputs.py`：跨文件一致性校验；本次 38 项检查全部通过。
 
