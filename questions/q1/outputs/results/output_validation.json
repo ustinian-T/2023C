@@ -1,219 +1,176 @@
 {
   "status": "PASS",
-  "check_count": 38,
+  "check_count": 42,
+  "passed": 42,
+  "failed": 0,
   "checks": [
     {
-      "check": "all SKU count agrees",
+      "check": "tab_q1_sku_activity_filter.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "selected SKU count agrees",
+      "check": "tab_q1_distribution_summary.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "final SKU edge count agrees",
+      "check": "tab_q1_distribution_candidates.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "positive edge count agrees",
+      "check": "tab_q1_monthly_category_profile.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "negative edge count agrees",
+      "check": "tab_q1_monthly_sku_profile.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "edge table contains only final edges",
+      "check": "tab_q1_cluster_k_selection.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "all edges pass MIC threshold",
+      "check": "tab_q1_sku_clusters.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "all edges pass bootstrap threshold",
+      "check": "tab_q1_cluster_profiles.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "MIC candidate count agrees",
+      "check": "tab_q1_category_pair_relationships.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "connected SKU node count is 12",
+      "check": "tab_q1_within_category_pair_relationships.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "category edge count agrees",
+      "check": "tab_q1_cluster_pair_relationships.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "SKU precision matrix is positive definite",
+      "check": "tab_q1_within_cluster_pair_relationships.csv exists and is nontrivial",
       "passed": true
     },
     {
-      "check": "category precision matrix is positive definite",
+      "check": "Total SKU count: 251 == 251",
       "passed": true
     },
     {
-      "check": "alpha +/-20% keeps 10 candidate intersections",
+      "check": "Selected SKU count: 64 == 64",
       "passed": true
     },
     {
-      "check": "alpha +/-20% Jaccard equals 1",
+      "check": "Selected SKU count >= 60 (got 64)",
       "passed": true
     },
     {
-      "check": "fig_q1_stl_decomposition PNG exists and is nontrivial",
+      "check": "Selected SKU count <= 70 (got 64)",
       "passed": true
     },
     {
-      "check": "fig_q1_stl_decomposition PDF exists and is nontrivial",
+      "check": "Distribution objects count matches",
       "passed": true
     },
     {
-      "check": "fig_q1_stl_decomposition raster dimensions are publication grade",
+      "check": "Parametric accepted count matches",
       "passed": true
     },
     {
-      "check": "fig_q1_category_distributions PNG exists and is nontrivial",
+      "check": "Category monthly: 72 rows (got 72)",
       "passed": true
     },
     {
-      "check": "fig_q1_category_distributions PDF exists and is nontrivial",
+      "check": "Category monthly proportions are complete",
       "passed": true
     },
     {
-      "check": "fig_q1_category_distributions raster dimensions are publication grade",
+      "check": "SKU monthly: 768 rows (got 768)",
       "passed": true
     },
     {
-      "check": "fig_q1_mic_graphical_lasso PNG exists and is nontrivial",
+      "check": "k range starts at 2",
       "passed": true
     },
     {
-      "check": "fig_q1_mic_graphical_lasso PDF exists and is nontrivial",
+      "check": "k range covers at least 5",
       "passed": true
     },
     {
-      "check": "fig_q1_mic_graphical_lasso raster dimensions are publication grade",
+      "check": "Silhouette in summary matches k_eval table",
       "passed": true
     },
     {
-      "check": "fig_q1_sku_network PNG exists and is nontrivial",
+      "check": "All 64 SKUs assigned to clusters",
       "passed": true
     },
     {
-      "check": "fig_q1_sku_network PDF exists and is nontrivial",
+      "check": "5 clusters exist",
       "passed": true
     },
     {
-      "check": "fig_q1_sku_network raster dimensions are publication grade",
+      "check": "One profile per cluster",
       "passed": true
     },
     {
-      "check": "fig_q1_category_partial_matrix PNG exists and is nontrivial",
+      "check": "No empty clusters",
       "passed": true
     },
     {
-      "check": "fig_q1_category_partial_matrix PDF exists and is nontrivial",
+      "check": "Seasonal proportions within 0.5 of 1.0 per cluster (max diff: 0.397)",
       "passed": true
     },
     {
-      "check": "fig_q1_category_partial_matrix raster dimensions are publication grade",
+      "check": "15 category pairs (got 15)",
       "passed": true
     },
     {
-      "check": "fig_q1_robustness PNG exists and is nontrivial",
+      "check": "Category pair count in summary is 15",
       "passed": true
     },
     {
-      "check": "fig_q1_robustness PDF exists and is nontrivial",
+      "check": "10 cluster pairs (got 10)",
       "passed": true
     },
     {
-      "check": "fig_q1_robustness raster dimensions are publication grade",
+      "check": "Within-cluster relationships exist",
       "passed": true
     },
     {
-      "check": "archived result workbook exists",
+      "check": "Seasonal index correlations in [-1, 1]",
       "passed": true
     },
     {
-      "check": "archived result workbook is a valid XLSX zip container",
+      "check": "Active Jaccard in [0, 1]",
       "passed": true
     },
     {
-      "check": "archived result workbook contains workbook.xml",
+      "check": "fig_q1_category_distributions.png/.pdf exist",
       "passed": true
     },
     {
-      "check": "report/main.tex exists and is substantive",
+      "check": "fig_q1_category_distributions.png dimensions >= 1200x800",
       "passed": true
     },
     {
-      "check": "paper has no placeholders",
+      "check": "Summary has 'distribution' section",
+      "passed": true
+    },
+    {
+      "check": "Summary has 'clustering' section",
+      "passed": true
+    },
+    {
+      "check": "Summary has 'relationships' section",
+      "passed": true
+    },
+    {
+      "check": "Random seed preserved in config",
+      "passed": true
+    },
+    {
+      "check": "Legacy MIC+Graphical Lasso code preserved as appendix",
       "passed": true
     }
-  ],
-  "image_details": [
-    {
-      "base": "fig_q1_stl_decomposition",
-      "width": 7743,
-      "height": 3985,
-      "dpi": [
-        599.9988,
-        599.9988
-      ]
-    },
-    {
-      "base": "fig_q1_category_distributions",
-      "width": 7609,
-      "height": 3999,
-      "dpi": [
-        599.9988,
-        599.9988
-      ]
-    },
-    {
-      "base": "fig_q1_mic_graphical_lasso",
-      "width": 6517,
-      "height": 3889,
-      "dpi": [
-        599.9988,
-        599.9988
-      ]
-    },
-    {
-      "base": "fig_q1_sku_network",
-      "width": 6517,
-      "height": 3171,
-      "dpi": [
-        599.9988,
-        599.9988
-      ]
-    },
-    {
-      "base": "fig_q1_category_partial_matrix",
-      "width": 4942,
-      "height": 3953,
-      "dpi": [
-        599.9988,
-        599.9988
-      ]
-    },
-    {
-      "base": "fig_q1_robustness",
-      "width": 7526,
-      "height": 3998,
-      "dpi": [
-        599.9988,
-        599.9988
-      ]
-    }
-  ],
-  "report_compilation": {
-    "checked": false,
-    "available_engines": [],
-    "note": "LaTeX compilation is outside this validator; compile report/main.tex separately with a Chinese-capable engine."
-  }
+  ]
 }

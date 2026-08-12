@@ -6,7 +6,7 @@
 
 | 问题 | 主题 | 状态 | 入口 |
 | --- | --- | --- | --- |
-| 问题 1 | 销量分布与品类/单品关联关系 | 已完成并验证 | [questions/q1/README.md](questions/q1/README.md) |
+| 问题 1 | 销量分布与品类/单品关联关系 | ✅ 已完成（重构：季节画像 + K-means 聚类 + 分层关系分析） | [questions/q1/README.md](questions/q1/README.md) |
 | 问题 2 | 品类级未来一周补货与定价 | 目录已建立，求解尚未开始 | [questions/q2/README.md](questions/q2/README.md) |
 | 问题 3 | 单品级 7 月 1 日补货与定价 | 目录已建立，求解尚未开始 | [questions/q3/README.md](questions/q3/README.md) |
 | 问题 4 | 建议补充采集的数据及其作用 | 目录已建立，求解尚未开始 | [questions/q4/README.md](questions/q4/README.md) |
