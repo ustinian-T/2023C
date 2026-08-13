@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | 问题 1 | 销量分布与品类/单品关联关系 | ✅ 已完成（重构：季节画像 + K-means 聚类 + 分层关系分析） | [questions/q1/README.md](questions/q1/README.md) |
 | 问题 2 | 品类级未来一周补货与定价 | ✅ 已完成（半参数弹性 + 集成预测 + 联合场景 + 周级 CVaR 优化） | [questions/q2/README.md](questions/q2/README.md) |
-| 问题 3 | 单品级 7 月 1 日补货与定价 | 目录已建立，求解尚未开始 | [questions/q3/README.md](questions/q3/README.md) |
+| 问题 3 | 单品级 7 月 1 日补货与定价 | ✅ 已完成（动态份额 + Q2 场景映射 + 词典序 MILP） | [questions/q3/README.md](questions/q3/README.md) |
 | 问题 4 | 建议补充采集的数据及其作用 | 目录已建立，求解尚未开始 | [questions/q4/README.md](questions/q4/README.md) |
 
 ## 项目结构
@@ -61,3 +61,15 @@ python questions\q2\code\validate_q2_outputs.py
 ```
 
 主策略采用风险权重 `0.25`，优化目标中的尾部收益直接基于 600 条联合七日场景的周总利润计算，不以每日尾部收益之和替代。结果统一写入 `questions/q2/outputs/`。
+
+## 第三问复现
+
+第三问从仓库根目录执行：
+
+```powershell
+python questions\q3\code\q3_model.py
+python -m unittest discover -s questions\q3\code -p "test_q3_model.py"
+python questions\q3\code\validate_q3_outputs.py
+```
+
+模型严格从 6 月 24-30 日正销量记录得到 49 个候选，并复用第二问的品类弹性、成本预测和 600 个相关场景。最终选 33 个单品，完整场景需求满足率为 77.81%，输出统一写入 `questions/q3/outputs/`。
