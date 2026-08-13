@@ -83,4 +83,3 @@
 - [ ] Document assumptions, formulas, commands, file schema, and interpretation without claiming unsupported Q1 effects.
 - [ ] Run Q1, Q2, and Q3 validators and all unit tests.
 - [ ] Run `git diff --check` and inspect the final diff for accidental data or unrelated changes.
-
