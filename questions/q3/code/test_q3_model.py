@@ -152,6 +152,13 @@ class EvaluationTests(unittest.TestCase):
     def test_lower_tail_mean_uses_worst_outcomes(self):
         self.assertAlmostEqual(q3.lower_tail_mean(np.array([10.0, -5.0, 3.0, -1.0]), 0.5), -3.0)
 
+    def test_replenishment_band_is_symmetric_005pct(self):
+        lower, upper = q3.replenishment_band(1000.0)
+
+        self.assertAlmostEqual(lower, 999.5, places=12)
+        self.assertAlmostEqual(upper, 1000.5, places=12)
+        self.assertAlmostEqual(upper - lower, 1.0, places=12)
+
     def test_scenario_fold_summary_is_deterministic_complete_and_finite(self):
         service_loss = np.linspace(0.10, 0.30, 12)
         profit = np.array([10.0, -1.0, 4.0, 3.0, 8.0, 2.0, -2.0, 9.0, 1.0, 7.0, 6.0, 5.0])
@@ -344,6 +351,83 @@ class LexicographicMilpTests(unittest.TestCase):
         )
         self.assertLessEqual(result["strategy"]["order_qty_kg"].sum(), 7.0 + 1e-8)
         self.assertTrue((result["strategy"]["order_qty_kg"] >= 2.5 - 1e-8).all())
+
+    def test_solver_enforces_replenishment_floor_when_demand_is_satiated(self):
+        # Demand is small (4 kg total) so service is already perfect well below
+        # the cap; without a floor the profit stage trims orders to what demand
+        # absorbs. A 6.0 kg floor forces total orders up to at least 6.0 kg.
+        candidates = pd.DataFrame(
+            {
+                "sku_code": ["A", "B"],
+                "sku_name": ["甲", "乙"],
+                "category_name": ["花叶类", "花叶类"],
+                "loss_rate": [0.0, 0.0],
+                "big_m_kg": [20.0, 20.0],
+            }
+        )
+        grid = pd.DataFrame(
+            {
+                "sku_code": ["A", "B"],
+                "sku_name": ["甲", "乙"],
+                "category_name": ["花叶类", "花叶类"],
+                "price_level": [1, 1],
+                "price_yuan_per_kg": [8.0, 8.0],
+            }
+        )
+        common = dict(
+            alternative_demand=np.array([[2.0, 2.0], [2.0, 2.0]]),
+            category_demand=np.full((2, 1), 4.0),
+            sku_cost=np.ones((2, 2)),
+            categories=["花叶类"],
+            assortment_size=2,
+            service_tolerance=0.0,
+        )
+        unconstrained = q3.solve_lexicographic_milp(
+            candidates, grid, total_order_upper=10.0, total_order_lower=5.0, **common
+        )
+        self.assertLess(
+            unconstrained["strategy"]["order_qty_kg"].sum(), 6.0 - 1e-7
+        )
+
+        banded = q3.solve_lexicographic_milp(
+            candidates, grid, total_order_upper=10.0, total_order_lower=6.0, **common
+        )
+        total = banded["strategy"]["order_qty_kg"].sum()
+        self.assertGreaterEqual(total, 6.0 - 1e-7)
+        self.assertLessEqual(total, 10.0 + 1e-7)
+        self.assertTrue((banded["strategy"]["order_qty_kg"] >= 2.5 - 1e-8).all())
+
+    def test_solver_rejects_inverted_replenishment_band(self):
+        candidates = pd.DataFrame(
+            {
+                "sku_code": ["A", "B"],
+                "sku_name": ["甲", "乙"],
+                "category_name": ["花叶类", "花叶类"],
+                "loss_rate": [0.0, 0.0],
+                "big_m_kg": [10.0, 10.0],
+            }
+        )
+        grid = pd.DataFrame(
+            {
+                "sku_code": ["A", "B"],
+                "sku_name": ["甲", "乙"],
+                "category_name": ["花叶类", "花叶类"],
+                "price_level": [1, 1],
+                "price_yuan_per_kg": [8.0, 8.0],
+            }
+        )
+        with self.assertRaisesRegex(ValueError, "lower bound exceeds"):
+            q3.solve_lexicographic_milp(
+                candidates,
+                grid,
+                np.full((2, 2), 5.0),
+                np.full((2, 1), 10.0),
+                np.ones((2, 2)),
+                ["花叶类"],
+                assortment_size=2,
+                total_order_upper=5.0,
+                total_order_lower=6.0,
+            )
 
     def test_sensitivity_variant_is_resolved_with_configured_risk_and_cap(self):
         candidates = pd.DataFrame(

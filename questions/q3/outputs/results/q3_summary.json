@@ -11,21 +11,24 @@
   "evaluation_scenario_count": 600,
   "risk_weight": 0.25,
   "lower_tail_probability": 0.1,
-  "q2_total_replenishment_upper_kg": 362.26266428064804,
-  "base_model_signature": "01e92d23590cb42fd5ace6fd2515c26ba4f8f2ab8972b604f705bd5f76f240ef",
-  "base_frontier_reused": true,
+  "q2_total_replenishment_baseline_kg": 362.26266428064804,
+  "q2_total_replenishment_lower_kg": 362.08153294850774,
+  "q2_total_replenishment_upper_kg": 362.44379561278834,
+  "replenishment_fluctuation": 0.0005,
+  "base_model_signature": "1a72d9c8f0d938e348cd6db93ed854b0ffddedc5b64135ce692ee09a134b6d9c",
+  "base_frontier_reused": false,
   "main_strategy": {
     "selected_sku_count": 33,
-    "expected_service_loss": 0.22192072383072475,
-    "mean_demand_satisfaction": 0.7780792761692752,
-    "expected_profit_yuan": 163.75171706580994,
-    "lower10pct_profit_yuan": -422.81316184538895,
-    "risk_adjusted_profit_yuan": 17.11049733801022,
-    "total_order_qty_kg": 362.26266428064804,
+    "expected_service_loss": 0.22181489290897904,
+    "mean_demand_satisfaction": 0.778185107091021,
+    "expected_profit_yuan": 163.57378808978714,
+    "lower10pct_profit_yuan": -423.2096107493048,
+    "risk_adjusted_profit_yuan": 16.877938380014157,
+    "total_order_qty_kg": 362.4437956127884,
     "assortment_size": 33,
-    "optimization_stage1_service_loss": 0.1975102992099795,
-    "optimization_stage2_service_loss": 0.2144303503007547,
-    "service_tolerance": 0.016920050090775
+    "optimization_stage1_service_loss": 0.19740804150017105,
+    "optimization_stage2_service_loss": 0.2143283812058247,
+    "service_tolerance": 0.01692033870565366
   },
   "baseline": {
     "selected_sku_count": 33,
@@ -37,9 +40,9 @@
     "total_order_qty_kg": 314.87835316246225
   },
   "improvement_vs_baseline": {
-    "demand_satisfaction_percentage_points": 13.200440628135567,
-    "expected_profit_yuan": 107.2741936261703,
-    "lower10pct_profit_yuan": 16.94265414336536
+    "demand_satisfaction_percentage_points": 13.211023720310145,
+    "expected_profit_yuan": 107.0962646501475,
+    "lower10pct_profit_yuan": 16.546205239449534
   },
   "q2_scenario": {
     "residual_pool_days": 865,
@@ -60,34 +63,34 @@
     "q1_used_in_primary_objective": false
   },
   "model_validation": {
-    "representative_service_loss": 0.21443035030075472,
-    "full_service_loss": 0.22192072383072475,
-    "signed_service_loss_gap": 0.007490373529970035,
-    "absolute_service_loss_gap": 0.007490373529970035,
+    "representative_service_loss": 0.21432838120582468,
+    "full_service_loss": 0.22181489290897904,
+    "signed_service_loss_gap": 0.007486511703154369,
+    "absolute_service_loss_gap": 0.007486511703154369,
     "generalization_threshold": 0.03,
     "fold_count": 6,
     "fold_scenario_count": 100,
-    "fold_service_satisfaction_mean": 0.7780792761692751,
-    "fold_service_satisfaction_std": 0.00940483200516227,
-    "fold_service_satisfaction_min": 0.7671604038932419,
-    "fold_service_satisfaction_max": 0.7902219038531779,
-    "fold_expected_profit_std_yuan": 31.686678899996824,
+    "fold_service_satisfaction_mean": 0.7781851070910211,
+    "fold_service_satisfaction_std": 0.009410160657453603,
+    "fold_service_satisfaction_min": 0.7672416048337539,
+    "fold_service_satisfaction_max": 0.7903185778966535,
+    "fold_expected_profit_std_yuan": 31.713434484195165,
     "all_required_checks_passed": true
   },
   "sensitivity": {
     "variant_count": 9,
     "minimum_selection_jaccard": 0.8333333333333334,
     "service_satisfaction_range": [
-      0.7186131419780395,
-      0.8282546934418497
+      0.7186931600072679,
+      0.8283826945945719
     ],
     "expected_profit_range_yuan": [
-      -51.832231703560126,
-      356.55759830418276
+      -52.24408764899067,
+      356.3058293683925
     ],
     "lower10pct_profit_range_yuan": [
-      -599.7970593685294,
-      -264.99146090980076
+      -600.3726654252982,
+      -265.378191414735
     ]
   }
 }

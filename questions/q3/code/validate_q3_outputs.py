@@ -82,6 +82,20 @@ def main() -> None:
     check("frontier_service_identity", np.allclose(frontier["expected_service_loss"] + frontier["mean_demand_satisfaction"], 1.0), "loss+satisfaction=1")
     check("frontier_risk_identity", np.allclose(frontier["risk_adjusted_profit_yuan"], 0.75 * frontier["expected_profit_yuan"] + 0.25 * frontier["lower10pct_profit_yuan"]), "gamma=0.25")
     check("frontier_order_cap", bool((frontier["total_order_qty_kg"] <= summary["q2_total_replenishment_upper_kg"] + 1e-6).all()), "Q2 Jul-1 cap")
+    check(
+        "frontier_order_floor",
+        bool((frontier["total_order_qty_kg"] >= summary["q2_total_replenishment_lower_kg"] - 1e-6).all()),
+        "+/-0.05% band floor",
+    )
+    check(
+        "frontier_order_band_width",
+        math.isclose(
+            summary["q2_total_replenishment_upper_kg"] - summary["q2_total_replenishment_lower_kg"],
+            2.0 * summary["replenishment_fluctuation"] * summary["q2_total_replenishment_baseline_kg"],
+            abs_tol=1e-6,
+        ),
+        "symmetric +/-0.05% around Q2 total",
+    )
     check("frontier_finite", bool(np.isfinite(frontier.select_dtypes(include=[np.number])).all().all()), "all numeric frontier cells")
 
     selected_count = len(strategy)
@@ -91,6 +105,19 @@ def main() -> None:
     check("strategy_candidate_subset", set(strategy["sku_code"]).issubset(expected_codes), "selected candidates")
     check("strategy_min_order", bool((strategy["order_qty_kg"] >= 2.5 - 1e-8).all()), f"minimum={strategy['order_qty_kg'].min()}")
     check("strategy_order_cap", strategy["order_qty_kg"].sum() <= summary["q2_total_replenishment_upper_kg"] + 1e-6, f"total={strategy['order_qty_kg'].sum()}")
+    check(
+        "strategy_order_floor",
+        strategy["order_qty_kg"].sum() >= summary["q2_total_replenishment_lower_kg"] - 1e-6,
+        f"total={strategy['order_qty_kg'].sum()} floor={summary['q2_total_replenishment_lower_kg']}",
+    )
+    band_deviation = abs(
+        strategy["order_qty_kg"].sum() - summary["q2_total_replenishment_baseline_kg"]
+    ) / summary["q2_total_replenishment_baseline_kg"]
+    check(
+        "strategy_order_within_005pct",
+        band_deviation <= summary["replenishment_fluctuation"] + 1e-9,
+        f"|Q3-Q2|/Q2={100*band_deviation:.5f}%",
+    )
     grid_keys = set(zip(grid["sku_code"], np.round(grid["price_yuan_per_kg"], 6)))
     strategy_keys = set(zip(strategy["sku_code"], np.round(strategy["price_yuan_per_kg"], 6)))
     check("strategy_prices_from_grid", strategy_keys.issubset(grid_keys), "all chosen prices are discrete choices")
@@ -123,6 +150,25 @@ def main() -> None:
     check("sensitivity_one_baseline", (sensitivity["variant_id"] == "baseline").sum() == 1, "shared base solve")
     check("sensitivity_selected_33", bool((sensitivity["selected_sku_count"] == 33).all()), "all variants")
     check("sensitivity_cap_compliance", bool((sensitivity["total_order_qty_kg"] <= sensitivity["order_cap_kg"] + 1e-6).all()), "variant cap")
+    if "order_floor_kg" in sensitivity.columns:
+        finite_floor = sensitivity["order_floor_kg"].replace([np.inf, -np.inf], np.nan).dropna()
+        check(
+            "sensitivity_floor_compliance",
+            bool(
+                (
+                    sensitivity.loc[finite_floor.index, "total_order_qty_kg"]
+                    >= finite_floor - 1e-6
+                ).all()
+            ),
+            "variant +/-0.05% floor",
+        )
+        nominal = sensitivity["order_cap_kg"] / (1.0 + summary["replenishment_fluctuation"])
+        expected_floor = nominal * (1.0 - summary["replenishment_fluctuation"])
+        check(
+            "sensitivity_band_symmetric",
+            bool(np.allclose(sensitivity["order_floor_kg"], expected_floor, atol=1e-6)),
+            "floor = nominal*(1-0.0005)",
+        )
     check("sensitivity_jaccard_range", bool(sensitivity["selection_jaccard_vs_baseline"].between(0, 1).all()), "[0,1]")
     sensitivity_numeric = sensitivity.select_dtypes(include=[np.number])
     check("sensitivity_finite", bool(np.isfinite(sensitivity_numeric).all().all()), "all numeric cells")

@@ -39,7 +39,21 @@ FULL_SCENARIO_COUNT = 600
 OPTIMIZATION_SCENARIO_COUNT = 60
 RISK_WEIGHT = 0.25
 LOWER_TAIL_PROBABILITY = 0.10
-BASE_MODEL_VERSION = "2026-08-13-v1"
+# Q3 keeps Q2's total replenishment scale "basically unchanged" while allowing a
+# narrow band of +/-0.05% around Q2's 2023-07-01 total.  The old model treated the
+# Q2 total as a one-sided hard cap; the band lets the optimizer trade a tiny
+# amount of extra (or reduced) volume for a better risk-adjusted profit.
+REPLENISHMENT_FLUCTUATION = 0.0005
+BASE_MODEL_VERSION = "2026-08-13-v2"
+
+
+def replenishment_band(nominal_total: float) -> tuple[float, float]:
+    """Return the +/-0.05% replenishment band around a nominal total."""
+    nominal = float(nominal_total)
+    return (
+        nominal * (1.0 - REPLENISHMENT_FLUCTUATION),
+        nominal * (1.0 + REPLENISHMENT_FLUCTUATION),
+    )
 
 
 def _as_dates(frame: pd.DataFrame) -> pd.DataFrame:
@@ -614,6 +628,7 @@ def solve_lexicographic_milp(
     lower_tail_probability: float = 0.10,
     service_tolerance: float | None = None,
     total_order_upper: float | None = None,
+    total_order_lower: float | None = None,
     stage1_reference: Mapping[str, float] | None = None,
     time_limit_seconds: float = 120.0,
 ) -> dict:
@@ -621,6 +636,10 @@ def solve_lexicographic_milp(
 
     ``alternative_demand`` has one column per row of ``price_grid``.  SKU costs
     are scenario-specific and charged on ordered (pre-loss) kilograms.
+
+    The total replenishment is constrained to ``[total_order_lower,
+    total_order_upper]`` when those bounds are supplied, replacing Q2's old
+    one-sided cap with a +/-fluctuation band around Q2's total.
     """
 
     candidate = candidates.copy().reset_index(drop=True)
@@ -645,6 +664,14 @@ def solve_lexicographic_milp(
         raise ValueError("risk parameters are outside their valid ranges")
     if total_order_upper is not None and total_order_upper < assortment_size * minimum_order:
         raise ValueError("total order upper bound is below the mandatory minimum orders")
+    if total_order_lower is not None and total_order_lower < assortment_size * minimum_order:
+        raise ValueError("total order lower bound is below the mandatory minimum orders")
+    if (
+        total_order_lower is not None
+        and total_order_upper is not None
+        and total_order_lower > total_order_upper + 1e-9
+    ):
+        raise ValueError("total order lower bound exceeds the upper bound")
     if not np.isfinite(demand_alt).all() or not np.isfinite(demand_cat).all() or not np.isfinite(costs).all():
         raise ValueError("MILP inputs must be finite")
 
@@ -711,8 +738,10 @@ def solve_lexicographic_milp(
             constraint_upper.append(float(high))
 
         add(((x0 + i, 1.0) for i in range(n_i)), assortment_size, assortment_size)
-        if total_order_upper is not None:
-            add(((q0 + i, 1.0) for i in range(n_i)), -np.inf, float(total_order_upper))
+        if total_order_lower is not None or total_order_upper is not None:
+            low = float(total_order_lower) if total_order_lower is not None else -np.inf
+            high = float(total_order_upper) if total_order_upper is not None else np.inf
+            add(((q0 + i, 1.0) for i in range(n_i)), low, high)
         for i, alternatives in enumerate(alternatives_by_sku):
             add(
                 [(y0 + int(j), 1.0) for j in alternatives] + [(x0 + i, -1.0)],
@@ -1035,6 +1064,7 @@ def solve_sensitivity_variant(
     *,
     assortment_size: int,
     total_order_upper: float,
+    total_order_lower: float | None = None,
     baseline_selected: Iterable[str],
     stage1_reference: Mapping[str, float] | None = None,
 ) -> dict:
@@ -1054,6 +1084,7 @@ def solve_sensitivity_variant(
         lower_tail_probability=LOWER_TAIL_PROBABILITY,
         service_tolerance=None,
         total_order_upper=float(total_order_upper),
+        total_order_lower=(float(total_order_lower) if total_order_lower is not None else None),
         stage1_reference=stage1_reference,
         time_limit_seconds=180.0,
     )
@@ -1078,6 +1109,8 @@ def solve_sensitivity_variant(
         raise RuntimeError(f"{variant['variant_id']} violates the minimum order")
     if metric["total_order_qty_kg"] > float(total_order_upper) + 1e-6:
         raise RuntimeError(f"{variant['variant_id']} violates its replenishment cap")
+    if total_order_lower is not None and metric["total_order_qty_kg"] < float(total_order_lower) - 1e-6:
+        raise RuntimeError(f"{variant['variant_id']} violates its replenishment floor")
     row = {
         "variant_id": str(variant["variant_id"]),
         "parameter_group": str(variant["parameter_group"]),
@@ -1087,6 +1120,7 @@ def solve_sensitivity_variant(
         "historical_share_weight": float(variant["historical_share_weight"]),
         "order_cap_factor": float(variant["order_cap_factor"]),
         "order_cap_kg": float(total_order_upper),
+        "order_floor_kg": float(total_order_lower) if total_order_lower is not None else np.nan,
         **metric,
         "assortment_size": int(assortment_size),
         "selection_jaccard_vs_baseline": selection_jaccard(selected_codes, baseline_selected),
@@ -1094,7 +1128,10 @@ def solve_sensitivity_variant(
         "optimization_stage2_service_loss": float(solved["stage2_service_loss"]),
         "service_tolerance": float(solved["service_tolerance"]),
     }
-    if not np.isfinite([value for value in row.values() if isinstance(value, (int, float))]).all():
+    numeric_values = [
+        value for value in row.values() if isinstance(value, (int, float)) and not math.isnan(float(value))
+    ]
+    if not np.isfinite(numeric_values).all():
         raise RuntimeError(f"{variant['variant_id']} produced non-finite metrics")
     return {
         "row": row,
@@ -1113,6 +1150,8 @@ def run_sensitivity_analysis(
     sku_cost_scenarios: np.ndarray,
     representative_indices: np.ndarray,
     q2_total_order_upper: float,
+    q2_total_order_lower: float | None,
+    q2_total_order_nominal: float,
     base_solution: Mapping[str, object],
     base_share_scenarios: np.ndarray,
     base_alternative_demand: np.ndarray,
@@ -1137,6 +1176,7 @@ def run_sensitivity_analysis(
             row = {
                 **variant,
                 "order_cap_kg": float(q2_total_order_upper),
+                "order_floor_kg": float(q2_total_order_lower) if q2_total_order_lower is not None else np.nan,
                 **metric,
                 "selection_jaccard_vs_baseline": 1.0,
                 "optimization_stage1_service_loss": float(solved["stage1_service_loss"]),
@@ -1179,6 +1219,12 @@ def run_sensitivity_analysis(
                 maximum_sku_demand,
                 candidate_variant["loss_rate"].to_numpy(dtype=float),
             )
+            # Every variant keeps total replenishment within +/-0.05% of its
+            # nominal budget.  Non-budget variants use the un-inflated Q2 total;
+            # the dedicated order_cap_factor variants center the band on the
+            # tighter stress-test budget so the budget cuts remain comparable.
+            nominal_cap = q2_total_order_nominal * float(variant["order_cap_factor"])
+            variant_lower, variant_upper = replenishment_band(nominal_cap)
             result = solve_sensitivity_variant(
                 variant,
                 candidate_variant,
@@ -1189,7 +1235,8 @@ def run_sensitivity_analysis(
                 categories,
                 representative_indices,
                 assortment_size=33,
-                total_order_upper=q2_total_order_upper * float(variant["order_cap_factor"]),
+                total_order_upper=variant_upper,
+                total_order_lower=variant_lower,
                 baseline_selected=baseline_selected,
                 stage1_reference=(
                     {
@@ -1358,6 +1405,7 @@ def compute_base_model_signature() -> str:
                 "risk_weight": RISK_WEIGHT,
                 "lower_tail_probability": LOWER_TAIL_PROBABILITY,
                 "minimum_order_kg": MINIMUM_ORDER_KG,
+                "replenishment_fluctuation": REPLENISHMENT_FLUCTUATION,
             },
             sort_keys=True,
         ).encode("utf-8")
@@ -1398,6 +1446,7 @@ def reconstruct_cached_base_solution(
     categories: Sequence[str],
     *,
     total_order_upper: float,
+    total_order_lower: float | None = None,
     tolerance: float = 1e-6,
 ) -> dict:
     """Rebuild and verify the cached K=33 base solution on current scenarios."""
@@ -1428,6 +1477,8 @@ def reconstruct_cached_base_solution(
     )
     if strategy["order_qty_kg"].sum() > total_order_upper + tolerance:
         raise ValueError("cached base solution exceeds the current Q2 replenishment cap")
+    if total_order_lower is not None and strategy["order_qty_kg"].sum() < total_order_lower - tolerance:
+        raise ValueError("cached base solution is below the current Q2 replenishment floor")
     if (strategy.loc[selected_mask, "order_qty_kg"] < MINIMUM_ORDER_KG - tolerance).any():
         raise ValueError("cached base solution violates the minimum order")
     grid_keys = set(
@@ -1509,7 +1560,8 @@ def run_real_pipeline(*, reuse_base: bool = True) -> dict:
     if set(candidates["category_name"]) != set(categories):
         raise RuntimeError("Q3 candidate categories do not match Q2 categories")
     category_position = {category: idx for idx, category in enumerate(categories)}
-    q2_total_order_upper = float(q2["target_strategy"]["replenishment_kg"].sum())
+    q2_total_order_nominal = float(q2["target_strategy"]["replenishment_kg"].sum())
+    q2_total_order_lower, q2_total_order_upper = replenishment_band(q2_total_order_nominal)
 
     week = daily.loc[daily["date"].between(CANDIDATE_START, CANDIDATE_END)].copy()
     positive_week = week.loc[week["gross_sales_qty"] > 0]
@@ -1604,6 +1656,7 @@ def run_real_pipeline(*, reuse_base: bool = True) -> dict:
                     q2["category_demand"],
                     categories,
                     total_order_upper=q2_total_order_upper,
+                    total_order_lower=q2_total_order_lower,
                 )
                 solutions[33] = final
                 base_frontier_reused = True
@@ -1625,6 +1678,7 @@ def run_real_pipeline(*, reuse_base: bool = True) -> dict:
                 lower_tail_probability=LOWER_TAIL_PROBABILITY,
                 service_tolerance=None,
                 total_order_upper=q2_total_order_upper,
+                total_order_lower=q2_total_order_lower,
                 time_limit_seconds=180.0,
             )
             metric, chosen_demand, evaluation = _strategy_metrics(
@@ -1710,6 +1764,8 @@ def run_real_pipeline(*, reuse_base: bool = True) -> dict:
         sku_cost_scenarios,
         representative,
         q2_total_order_upper,
+        q2_total_order_lower,
+        q2_total_order_nominal,
         solutions[33],
         share_scenarios,
         alternative_demand,
@@ -1797,7 +1853,10 @@ def run_real_pipeline(*, reuse_base: bool = True) -> dict:
         "evaluation_scenario_count": FULL_SCENARIO_COUNT,
         "risk_weight": RISK_WEIGHT,
         "lower_tail_probability": LOWER_TAIL_PROBABILITY,
+        "q2_total_replenishment_baseline_kg": q2_total_order_nominal,
+        "q2_total_replenishment_lower_kg": q2_total_order_lower,
         "q2_total_replenishment_upper_kg": q2_total_order_upper,
+        "replenishment_fluctuation": REPLENISHMENT_FLUCTUATION,
         "base_model_signature": base_signature,
         "base_frontier_reused": base_frontier_reused,
         "main_strategy": final["metric"],
