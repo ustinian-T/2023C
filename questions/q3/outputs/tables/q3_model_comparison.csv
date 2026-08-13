@@ -1,0 +1,3 @@
+﻿model,selected_sku_count,expected_service_loss,mean_demand_satisfaction,expected_profit_yuan,lower10pct_profit_yuan,risk_adjusted_profit_yuan,total_order_qty_kg,assortment_size,optimization_stage1_service_loss,optimization_stage2_service_loss,service_tolerance
+recent_sales_baseline,33,0.35392513011208054,0.6460748698879195,56.47752343963965,-439.7558159887543,-67.58081141745885,314.87835316246225,,,,
+lexicographic_scenario_milp,33,0.22192072383072475,0.7780792761692752,163.75171706580994,-422.81316184538895,17.11049733801022,362.26266428064804,33.0,0.1975102992099795,0.2144303503007547,0.016920050090775

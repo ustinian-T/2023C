@@ -1,0 +1,415 @@
+{
+  "status": "passed",
+  "checks_passed": 77,
+  "checks_total": 77,
+  "checks": [
+    {
+      "name": "file:q3_candidate_diagnostics.csv",
+      "passed": true,
+      "detail": "H:\\2026暑期数学建模培训\\2023C\\2023C\\.worktrees\\q3-sku-optimization\\questions\\q3\\outputs\\tables\\q3_candidate_diagnostics.csv"
+    },
+    {
+      "name": "file:q3_price_grid.csv",
+      "passed": true,
+      "detail": "H:\\2026暑期数学建模培训\\2023C\\2023C\\.worktrees\\q3-sku-optimization\\questions\\q3\\outputs\\tables\\q3_price_grid.csv"
+    },
+    {
+      "name": "file:q3_k_frontier.csv",
+      "passed": true,
+      "detail": "H:\\2026暑期数学建模培训\\2023C\\2023C\\.worktrees\\q3-sku-optimization\\questions\\q3\\outputs\\tables\\q3_k_frontier.csv"
+    },
+    {
+      "name": "file:q3_daily_strategy.csv",
+      "passed": true,
+      "detail": "H:\\2026暑期数学建模培训\\2023C\\2023C\\.worktrees\\q3-sku-optimization\\questions\\q3\\outputs\\tables\\q3_daily_strategy.csv"
+    },
+    {
+      "name": "file:q3_category_summary.csv",
+      "passed": true,
+      "detail": "H:\\2026暑期数学建模培训\\2023C\\2023C\\.worktrees\\q3-sku-optimization\\questions\\q3\\outputs\\tables\\q3_category_summary.csv"
+    },
+    {
+      "name": "file:q3_model_comparison.csv",
+      "passed": true,
+      "detail": "H:\\2026暑期数学建模培训\\2023C\\2023C\\.worktrees\\q3-sku-optimization\\questions\\q3\\outputs\\tables\\q3_model_comparison.csv"
+    },
+    {
+      "name": "file:q3_sensitivity_analysis.csv",
+      "passed": true,
+      "detail": "H:\\2026暑期数学建模培训\\2023C\\2023C\\.worktrees\\q3-sku-optimization\\questions\\q3\\outputs\\tables\\q3_sensitivity_analysis.csv"
+    },
+    {
+      "name": "file:q3_model_validation.csv",
+      "passed": true,
+      "detail": "H:\\2026暑期数学建模培训\\2023C\\2023C\\.worktrees\\q3-sku-optimization\\questions\\q3\\outputs\\tables\\q3_model_validation.csv"
+    },
+    {
+      "name": "file:q3_summary.json",
+      "passed": true,
+      "detail": "H:\\2026暑期数学建模培训\\2023C\\2023C\\.worktrees\\q3-sku-optimization\\questions\\q3\\outputs\\results\\q3_summary.json"
+    },
+    {
+      "name": "candidate_count_49",
+      "passed": true,
+      "detail": "rows=49"
+    },
+    {
+      "name": "candidate_exact_raw_set",
+      "passed": true,
+      "detail": "raw=49"
+    },
+    {
+      "name": "candidate_unique",
+      "passed": true,
+      "detail": "SKU codes must be unique"
+    },
+    {
+      "name": "candidate_complete",
+      "passed": true,
+      "detail": "identity/cost/loss fields"
+    },
+    {
+      "name": "candidate_cost_positive",
+      "passed": true,
+      "detail": "yuan/kg"
+    },
+    {
+      "name": "candidate_loss_range",
+      "passed": true,
+      "detail": "fraction"
+    },
+    {
+      "name": "eb_share_sums",
+      "passed": true,
+      "detail": "{\"水生根茎类\":1.0,\"花叶类\":1.0,\"花菜类\":1.0,\"茄类\":1.0,\"辣椒类\":1.0,\"食用菌\":1.0}"
+    },
+    {
+      "name": "q1_not_forced",
+      "passed": true,
+      "detail": "Q1 coverage is diagnostic only"
+    },
+    {
+      "name": "grid_all_candidates",
+      "passed": true,
+      "detail": "grid SKUs=49"
+    },
+    {
+      "name": "grid_positive_prices",
+      "passed": true,
+      "detail": "yuan/kg"
+    },
+    {
+      "name": "grid_tenth_yuan",
+      "passed": true,
+      "detail": "0.1 yuan precision"
+    },
+    {
+      "name": "grid_unique_levels",
+      "passed": true,
+      "detail": "no duplicate SKU-price choices"
+    },
+    {
+      "name": "grid_finite",
+      "passed": true,
+      "detail": "all numeric grid cells"
+    },
+    {
+      "name": "frontier_has_27_to_33",
+      "passed": true,
+      "detail": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33
+      ]
+    },
+    {
+      "name": "frontier_count_identity",
+      "passed": true,
+      "detail": "selected=K"
+    },
+    {
+      "name": "frontier_service_identity",
+      "passed": true,
+      "detail": "loss+satisfaction=1"
+    },
+    {
+      "name": "frontier_risk_identity",
+      "passed": true,
+      "detail": "gamma=0.25"
+    },
+    {
+      "name": "frontier_order_cap",
+      "passed": true,
+      "detail": "Q2 Jul-1 cap"
+    },
+    {
+      "name": "frontier_finite",
+      "passed": true,
+      "detail": "all numeric frontier cells"
+    },
+    {
+      "name": "strategy_selected_range",
+      "passed": true,
+      "detail": "selected=33"
+    },
+    {
+      "name": "strategy_selected_summary",
+      "passed": true,
+      "detail": "CSV/JSON"
+    },
+    {
+      "name": "strategy_unique",
+      "passed": true,
+      "detail": "one row per selected SKU"
+    },
+    {
+      "name": "strategy_candidate_subset",
+      "passed": true,
+      "detail": "selected candidates"
+    },
+    {
+      "name": "strategy_min_order",
+      "passed": true,
+      "detail": "minimum=2.5"
+    },
+    {
+      "name": "strategy_order_cap",
+      "passed": true,
+      "detail": "total=362.2626642806481"
+    },
+    {
+      "name": "strategy_prices_from_grid",
+      "passed": true,
+      "detail": "all chosen prices are discrete choices"
+    },
+    {
+      "name": "strategy_date",
+      "passed": true,
+      "detail": "{'2023-07-01'}"
+    },
+    {
+      "name": "strategy_nonnegative_sales",
+      "passed": true,
+      "detail": "kg"
+    },
+    {
+      "name": "strategy_sales_le_demand",
+      "passed": true,
+      "detail": "scenario-mean inequality"
+    },
+    {
+      "name": "strategy_unsold_identity",
+      "passed": true,
+      "detail": "order-sales"
+    },
+    {
+      "name": "strategy_stockout_probability",
+      "passed": true,
+      "detail": "probability"
+    },
+    {
+      "name": "strategy_numeric_finite",
+      "passed": true,
+      "detail": "all numeric strategy cells"
+    },
+    {
+      "name": "category_six_rows",
+      "passed": true,
+      "detail": "rows=6"
+    },
+    {
+      "name": "category_candidate_total",
+      "passed": true,
+      "detail": "sum=49"
+    },
+    {
+      "name": "category_selected_total",
+      "passed": true,
+      "detail": "sum=33"
+    },
+    {
+      "name": "category_order_reconcile",
+      "passed": true,
+      "detail": "category/SKU total"
+    },
+    {
+      "name": "category_profit_reconcile",
+      "passed": true,
+      "detail": "category/summary total"
+    },
+    {
+      "name": "category_service_range",
+      "passed": true,
+      "detail": "category service"
+    },
+    {
+      "name": "comparison_main_matches_summary",
+      "passed": true,
+      "detail": "profit"
+    },
+    {
+      "name": "comparison_service_improves",
+      "passed": true,
+      "detail": "MILP vs baseline"
+    },
+    {
+      "name": "comparison_profit_improves",
+      "passed": true,
+      "detail": "MILP vs baseline"
+    },
+    {
+      "name": "comparison_tail_improves",
+      "passed": true,
+      "detail": "MILP vs baseline"
+    },
+    {
+      "name": "summary_scenario_count",
+      "passed": true,
+      "detail": "full Q2 scenario set"
+    },
+    {
+      "name": "summary_q1_pair_counts",
+      "passed": true,
+      "detail": "covered pairs"
+    },
+    {
+      "name": "summary_q1_not_objective",
+      "passed": true,
+      "detail": "diagnostic use"
+    },
+    {
+      "name": "sensitivity_nine_variants",
+      "passed": true,
+      "detail": "rows=9"
+    },
+    {
+      "name": "sensitivity_one_baseline",
+      "passed": true,
+      "detail": "shared base solve"
+    },
+    {
+      "name": "sensitivity_selected_33",
+      "passed": true,
+      "detail": "all variants"
+    },
+    {
+      "name": "sensitivity_cap_compliance",
+      "passed": true,
+      "detail": "variant cap"
+    },
+    {
+      "name": "sensitivity_jaccard_range",
+      "passed": true,
+      "detail": "[0,1]"
+    },
+    {
+      "name": "sensitivity_finite",
+      "passed": true,
+      "detail": "all numeric cells"
+    },
+    {
+      "name": "sensitivity_baseline_mean_demand_satisfaction",
+      "passed": true,
+      "detail": "sensitivity/main summary"
+    },
+    {
+      "name": "sensitivity_baseline_expected_profit_yuan",
+      "passed": true,
+      "detail": "sensitivity/main summary"
+    },
+    {
+      "name": "sensitivity_baseline_lower10pct_profit_yuan",
+      "passed": true,
+      "detail": "sensitivity/main summary"
+    },
+    {
+      "name": "sensitivity_baseline_total_order_qty_kg",
+      "passed": true,
+      "detail": "sensitivity/main summary"
+    },
+    {
+      "name": "sensitivity_budget_levels",
+      "passed": true,
+      "detail": [
+        0.85,
+        0.925,
+        1.0
+      ]
+    },
+    {
+      "name": "sensitivity_budget_service_monotone",
+      "passed": true,
+      "detail": [
+        0.2556073390095227,
+        0.2373114662270584,
+        0.2219207238307247
+      ]
+    },
+    {
+      "name": "sensitivity_summary_count",
+      "passed": true,
+      "detail": "JSON/CSV"
+    },
+    {
+      "name": "validation_generalization_row",
+      "passed": true,
+      "detail": "rows=1"
+    },
+    {
+      "name": "validation_generalization_gap",
+      "passed": true,
+      "detail": "<=0.03"
+    },
+    {
+      "name": "validation_six_folds",
+      "passed": true,
+      "detail": "rows=6"
+    },
+    {
+      "name": "validation_fold_sizes",
+      "passed": true,
+      "detail": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ]
+    },
+    {
+      "name": "validation_fold_service_range",
+      "passed": true,
+      "detail": "[0,1]"
+    },
+    {
+      "name": "validation_fold_finite",
+      "passed": true,
+      "detail": "fold metrics"
+    },
+    {
+      "name": "validation_fold_stability_row",
+      "passed": true,
+      "detail": "rows=1"
+    },
+    {
+      "name": "validation_fold_service_std",
+      "passed": true,
+      "detail": "<=0.05"
+    },
+    {
+      "name": "validation_required_rows_pass",
+      "passed": true,
+      "detail": "threshold rows"
+    },
+    {
+      "name": "validation_summary_pass",
+      "passed": true,
+      "detail": "JSON"
+    }
+  ]
+}

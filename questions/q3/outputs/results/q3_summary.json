@@ -1,0 +1,93 @@
+{
+  "model": "dynamic SKU empirical-Bayes shares + Q2 category response/scenarios + lexicographic scenario MILP",
+  "decision_date": "2023-07-01",
+  "candidate_window": [
+    "2023-06-24",
+    "2023-06-30"
+  ],
+  "candidate_sku_count": 49,
+  "selected_sku_count": 33,
+  "optimization_scenario_count": 60,
+  "evaluation_scenario_count": 600,
+  "risk_weight": 0.25,
+  "lower_tail_probability": 0.1,
+  "q2_total_replenishment_upper_kg": 362.26266428064804,
+  "base_model_signature": "01e92d23590cb42fd5ace6fd2515c26ba4f8f2ab8972b604f705bd5f76f240ef",
+  "base_frontier_reused": true,
+  "main_strategy": {
+    "selected_sku_count": 33,
+    "expected_service_loss": 0.22192072383072475,
+    "mean_demand_satisfaction": 0.7780792761692752,
+    "expected_profit_yuan": 163.75171706580994,
+    "lower10pct_profit_yuan": -422.81316184538895,
+    "risk_adjusted_profit_yuan": 17.11049733801022,
+    "total_order_qty_kg": 362.26266428064804,
+    "assortment_size": 33,
+    "optimization_stage1_service_loss": 0.1975102992099795,
+    "optimization_stage2_service_loss": 0.2144303503007547,
+    "service_tolerance": 0.016920050090775
+  },
+  "baseline": {
+    "selected_sku_count": 33,
+    "expected_service_loss": 0.35392513011208054,
+    "mean_demand_satisfaction": 0.6460748698879195,
+    "expected_profit_yuan": 56.47752343963965,
+    "lower10pct_profit_yuan": -439.7558159887543,
+    "risk_adjusted_profit_yuan": -67.58081141745885,
+    "total_order_qty_kg": 314.87835316246225
+  },
+  "improvement_vs_baseline": {
+    "demand_satisfaction_percentage_points": 13.200440628135567,
+    "expected_profit_yuan": 107.2741936261703,
+    "lower10pct_profit_yuan": 16.94265414336536
+  },
+  "q2_scenario": {
+    "residual_pool_days": 865,
+    "valid_7day_blocks": 859,
+    "scenario_count": 600,
+    "max_abs_cross_category_corr_difference": 0.06881407107399207,
+    "max_abs_joint_demand_cost_corr_difference": 0.06881407107399123
+  },
+  "q1_diagnostics": {
+    "q1_candidate_sku_coverage": 26,
+    "q1_candidate_sku_total": 49,
+    "q1_candidate_pairs_covered": 325,
+    "q1_pair_strength_counts": {
+      "retained": 246,
+      "weak": 70,
+      "clear": 9
+    },
+    "q1_used_in_primary_objective": false
+  },
+  "model_validation": {
+    "representative_service_loss": 0.21443035030075472,
+    "full_service_loss": 0.22192072383072475,
+    "signed_service_loss_gap": 0.007490373529970035,
+    "absolute_service_loss_gap": 0.007490373529970035,
+    "generalization_threshold": 0.03,
+    "fold_count": 6,
+    "fold_scenario_count": 100,
+    "fold_service_satisfaction_mean": 0.7780792761692751,
+    "fold_service_satisfaction_std": 0.00940483200516227,
+    "fold_service_satisfaction_min": 0.7671604038932419,
+    "fold_service_satisfaction_max": 0.7902219038531779,
+    "fold_expected_profit_std_yuan": 31.686678899996824,
+    "all_required_checks_passed": true
+  },
+  "sensitivity": {
+    "variant_count": 9,
+    "minimum_selection_jaccard": 0.8333333333333334,
+    "service_satisfaction_range": [
+      0.7186131419780395,
+      0.8282546934418497
+    ],
+    "expected_profit_range_yuan": [
+      -51.832231703560126,
+      356.55759830418276
+    ],
+    "lower10pct_profit_range_yuan": [
+      -599.7970593685294,
+      -264.99146090980076
+    ]
+  }
+}
