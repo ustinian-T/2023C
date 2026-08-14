@@ -29,8 +29,8 @@ natureColors = [
     159 141 184;
     208 208 138] / 255;
 
-paperBg = [248 247 244] / 255;
-panelBg = [253 252 249] / 255;
+paperBg = [1 1 1];
+panelBg = [1 1 1];
 ink = [43 48 54] / 255;
 gridColor = [214 216 215] / 255;
 fontName = 'Microsoft YaHei';
