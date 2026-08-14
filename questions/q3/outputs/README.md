@@ -11,4 +11,6 @@
 - `q3_sensitivity_analysis.csv`：风险权重、弹性、SKU 份额和采购上限的 9 组重求解结果；
 - `q3_model_validation.csv`：代表场景泛化、六折稳定性和基线检验明细。
 
-`results/q3_summary.json` 保存核心参数、模型指纹、检验和灵敏度摘要；`results/q3_validation.json` 保存 77 项独立校验结果。CSV 使用 UTF-8 BOM，金额单位为元，重量单位为 kg，价格单位为元/kg。
+`results/q3_summary.json` 保存核心参数、模型指纹、检验和灵敏度摘要；`results/q3_validation.json` 保存 83 项独立校验结果。CSV 使用 UTF-8 BOM，金额单位为元，重量单位为 kg，价格单位为元/kg。
+
+`figures/` 保存 6 组由 MATLAB 读取正式 CSV 后生成的彩色图表（PNG/PDF），其中 `fig_q3_category_radial_allocation` 为需求覆盖与补货占比的补充展示。本目录只保留 60 场景正式模型及 600 场景评价结果，不保存辅助全量重优化程序或中间结果。
