@@ -34,7 +34,11 @@ def main() -> None:
         RESULTS / "q3_summary.json",
     ]
     for path in required_files:
-        check(f"file:{path.name}", path.exists() and path.stat().st_size > 0, str(path))
+        check(
+            f"file:{path.name}",
+            path.exists() and path.stat().st_size > 0,
+            str(path.relative_to(ROOT)),
+        )
     if not all(item["passed"] for item in checks):
         raise SystemExit("required Q3 output files are missing")
 

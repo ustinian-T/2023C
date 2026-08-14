@@ -744,7 +744,7 @@ def restore_numbering_sequences(path):
     doc = Document(path)
     groups = [[
         "读取附件处理数据", "估计单品成本", "将份额场景", "从 600 场景中分层",
-        "把每个 K 的决策", "生成单品清单", "运行 17 项单元测试",
+        "把每个 K 的决策", "生成单品清单", "运行 20 项单元测试",
     ]]
     for prefixes in groups:
         num_id = create_numbering_definition(doc)
