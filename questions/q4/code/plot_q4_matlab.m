@@ -70,7 +70,7 @@ evidenceColors = [
 
 fig = figure('Color',paperBg,'Position',[70 80 1680 760]);
 t = tiledlayout(fig,1,3,'TileSpacing','compact','Padding','compact');
-title(t,'前三问可核验诊断证据（原始指标，不合成为主观总分）', ...
+title(t,'前三问可核验诊断证据', ...
     'FontSize',20,'FontWeight','bold','Color',ink);
 panelGroups = {1:2,3:7,8:10};
 panelTitles = {'Q1 规律识别','Q2 预测与服务','Q3 单品决策'};
