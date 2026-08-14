@@ -1,125 +1,292 @@
-% !TeX program = xelatex
-% =====================================================================
-%  第一问：模型建立、求解及结果分析（子问题结构）
-%  结构：数据预处理与季节基础 → 子问题一(分布)→ 子问题二(聚类) → 子问题三(关系)
-%  每个子问题内部：模型构建 → 求解结果（表/图 + 结论），与主论文逐问评审结构一致。
-%  可直接合并进论文"建模与求解"章节；仅复制 \section 至 \end{document} 之间正文。
-%  编译环境：ctexart + XeLaTeX（与主论文一致）
-% =====================================================================
-\documentclass[12pt,a4paper]{ctexart}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{amsmath,amssymb,bm}
-\usepackage{booktabs,array,float,tabularx,longtable}
-\usepackage{graphicx,xcolor,hyperref}
-\usepackage{enumitem}
-\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
-\setlength{\parindent}{2em}
-\setlength{\parskip}{0.35em}
-\setlength{\emergencystretch}{1.5em}
-\setlist{nosep}
+\documentclass[withoutpreface,bwprint]{cumcmthesis} %去掉封面与编号页，电子版提交的时候使用。
+
+\usepackage{tabularx}
+\usepackage{cite}
+\usepackage[framemethod=TikZ]{mdframed}
+\usepackage{url}   % 网页链接
+\usepackage{subcaption} % 子标题
+\usepackage{titlesec}    % 控制标题样式
+\usepackage{doi}
+\usepackage{amsmath}
+\numberwithin{equation}{section}
+
+% 强制公式编号为阿拉伯数字
+\renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
+
+% 自定义四级标题计数器
+\newcounter{fourthlevel}[subsubsection]
+\renewcommand{\thefourthlevel}{\thesubsubsection.\arabic{fourthlevel}}
+\makeatletter
+\@addtoreset{paragraph}{subsubsection}
+\makeatother
+
+\titleformat{\paragraph}[block]
+  {\heiti\large\bfseries}
+  {\thesubsubsection.\arabic{paragraph}}
+  {1em}
+  {}
+\titlespacing{\paragraph}{0pt}{1ex plus 0.5ex minus .2ex}{1em}
+
+% 让 paragraph 参与编号
+\setcounter{secnumdepth}{4}
+
+\title{基于的蔬菜类商品的定价与补货策略研究}
+
+
+
+\tihao{C}
+\baominghao{}
+\schoolname{}
+\membera{ }
+\memberb{ }
+\memberc{ }
+\supervisor{ }
+\yearinput{2025}
+\monthinput{09}
+\dayinput{04}
+
 \begin{document}
 
-\section{模型建立、求解及结果分析}
+ \maketitle
+ \begin{abstract}
+ 蔬菜类商品在生鲜商超的日常经营中，通常具有保质期短、需求不稳定的特点。若未能在当日内售出，往往会无法再售，导致商超面临损失。
+但由于各类蔬菜品种、产地等因素存在较大差异，蔬菜销售情况受到多种因素的影响，商家需要在不知道可供应单品以及进货价格的条件下在凌晨对当天各蔬菜的补货数量进行决策。
+蔬菜通常选用成本加成定价的方式确定售价，同时对运输过程中产生损耗以及品相下降的商品采用折价的方式进行销售。
+因此，本文结合销量时间规律、季节性供应条件并依据市场需求，确定合理的蔬菜补货方案以及定价策略，减少商超损失。
 
-题目要求分析蔬菜各品类及单品销售量的分布规律及相互关系。针对"先回答每个对象怎样卖，再回答哪些对象卖得像、何时同涨或错位"的分析链，按三个子问题依次建模求解：先以两部分布刻画销量分布规律，再以季节特征聚类识别单品的季节类型，最后在品类、簇间、单品多个层级上度量相互关系。
+针对问题一，
 
-\subsection{数据预处理与季节基础}
+针对问题二，
 
-\subsubsection{数据来源与活动度筛选}
+针对问题三，
 
-附件 1 给出 251 个单品与 6 个品类的对应关系，附件 2 给出 2020-07-01 至 2023-06-30 的销售流水。预处理已按"日期—单品"与"日期—品类"两级聚合为日销量表，重复键与负销量均为 0。为兼顾时令商品与估计稳定性，采用"销售跨度不少于 730 天、正销售日不少于 90 天、累计销量不少于 100 kg"的联合口径筛选，得到 64 个活动单品并覆盖全部 6 品类；任意单品对在双方共同可观察窗口内计算相关，共 2016 对。
+针对问题四,
 
-\subsubsection{时间尺度的统一}
 
-蔬菜销售具有明显季节性，为保证不同年份可比，将每年 7 月至次年 6 月认定为一个完整销售年度，并按气象学标准划分为四季：春季（3—5 月）、夏季（6—8 月）、秋季（9—11 月）、冬季（12—2 月）。数据覆盖 2020-07 至 2023-06 共三个完整销售年度，全部实体在统一时间尺度下对齐。
 
-\subsubsection{季节指标模型的建立}
+\keywords{多元非线性回归\quad  二元逻辑回归\quad   多目标优化 \quad 随机森林算法}
+\end{abstract}
 
-设实体 $i$ 在销售年度 $y$、月份 $m$ 的总销量为 $Q_{i,y,m}$，该月天数为 $d_m$，共 $N_y$ 个销售年度，$Y_{i,t}$ 为实体 $i$ 第 $t$ 日的销量。建立四个季节指标，分别从规模、结构、频次、相对强弱四个角度刻画季节特征。
 
-\textbf{（1）月均日销量 $\bar{Q}_{i,m}$}，用于消除不同月份天数差异的影响：
+%\tableofcontents
+
+%\newpage
+
+\section{问题重述}
+
+生鲜商超中，蔬菜类商品具有保鲜时期短、品质下降快的特点。当日未售完的蔬菜，次日已不适宜继续销售。相关研究表明，水果和蔬菜是超市易损耗商品的重要组成部分，不同蔬菜单品的零售损耗率存在较大差异\textsuperscript{\cite{buzby2015produce}}。
+因此，合理的库存与销售管理有助于兼顾商品新鲜度、销售量和损耗控制\textsuperscript{\cite{broekmeulen2019foodwaste}}。
+
+商超蔬菜采用成本加定价的方法进行销售，同时对运损和品质下降的蔬菜进行打折销售。但由于蔬菜采购通常在凌晨进行，
+商家在不明确当天具体供应单品及价格的情况下需要制定各类蔬菜的补货计划。因此，对市场需求进行准确预测分析是合理制定定价策略的重要基石。
+从需求方面看，蔬菜的销售量与时间之间也存在一定联系；从供给角度看，每年4月至10月的蔬菜可供应品种较多。同时，在有限的商超空间内，合理的销售组合有重要意义。
+
+已知附件1提供某商超经营的6个蔬菜品类及其商品信息，附件2与附件3分别给出了2020年7月1日至2023年6月30日期间各商品的销售流水数据和批发价格数据，附件4则提供了各商品近期的损耗率信息。
+现结合所给数据以及实际经营情况建立数学模型解决以下问题：
+
+问题1：不同蔬菜品类以及单品之间可能存在一定的联系。完成对蔬菜品类与单品销售量的分布规律以及相互关系的分析。
+
+问题2：在商超以蔬菜品类为单位进行补货的情况下，分析不同品类销售总量与成本加成定价的关系，并制定2023年7月1日至7月7日每日各蔬菜品类的补货总量与定价策略，使商超在对应时间段内收益最大。。
+
+问题3：考虑到商超销售空间有限，需要进一步制定单品补货方案。要求每日可售单品数量控制在27-33种之间，且每个单品的订购量不低于2.5千克。根据2023年6月24日至6月30日的可售单品情况，确定2023年7月1日各单品的补货数量和定价策略，在尽量满足消费者对各蔬菜品类需求的同时，实现商超收益最大化。
+
+问题4：为了进一步提高蔬菜补货与定价决策的准确性，给出商超应额外采集哪些相关经营数据，并说明这些数据对解决问题有何帮助，给出相应理由。
+\section{问题分析}
+
+\subsection{问题一的分析}
+针对问题一，需要探究不同蔬菜品类以及单品之间的销售量分布规律与相互关系。
+在销售规律方面，由于蔬菜销量中可能出现零销量情况与明显特征，普通简单统计指标难以完成分布规律描述。因此选用两部分分布，通过将各品类日销量划分为“零销量”与“正销量”两部分，通过AIC选取合适的分布规律，通过KS检验判断拟合效果，确定分布规律。
+接着，进一步研究不同品类及单品之间是否存在相互关系。
+考虑到销售数据具有明显的时间序列特性，直接计算相关系数易受季节变化等共同因素影响，从而产生伪相关，所以需要先对销量进行时间标准化处理，再从不同角度描述相关关系。首先，认定月度季节指数为蔬菜季节性指标；接着在各季节内通过对数变换去除季节影响后计算Sperman相关分析同一季节内销量变化趋势；
+接着将日销售量转换为销售份额，减小客流造成的整体性变化，同时利用活跃指数完成蔬菜是否同期销售的判断。最终结合 Bootstrap 置信区间和 FDR 校正对结果进行稳健性检验，得出结论。
+
+\subsection{问题二的分析}
+
+针对问题二，需要探究在以蔬菜品类为单位进行补货的基础上分析销售总量与成本加成定价之间的关系，并预测2023年7月1日至7月7日各品类每日的补货量以及销售价格使商超收益最大化。
+由于蔬菜的销售价格受时令、市场等多种因素影响，若直接根据历史价格与销量进行预测容易出现失误判断。因此，首先需要在控制外部因素的基础上判断价格变化对销售量的实际影响。
+得到上述对应影响关系后，进一步考虑到商超在凌晨进行进货时处于不明确当日价格的情况中，故想到可以依据历史批发价的变化规律对未来一周各蔬菜品类的进货成本进行预测，并结合成本加成定价的销售策略得到不同成本条件下的销售价格。
+同时结合第一问中的分析，考虑各蔬菜品类与单品之间存在一定的相互关系，对未来一周的需求场景进行讨论，最终计算对应场景的收益，通过构建以期望收益最大化和风险最小化的优化模型，在补货量、销售价格以及库存等条件约束下确定销售策略。
+\subsection{问题三的分析}
+
+\subsection{问题四的分析}
+
+\section{模型假设}
+  
+
+\section{符号说明}
+% 表格应具有三线表格式，因此常用 booktabs宏包，其标准格式如\cref{tab:001}~所示。
+\vspace*{-20pt}
+\begin{table}[H]
+    \centering
+    \begin{tabularx}{\textwidth}{*{5}{>{\centering\arraybackslash}X}}
+        \toprule[1.5pt]
+        符号 & 含义 \\
+        \midrule[1pt]
+        $g(Y)$ & Y染色体浓度函数\\
+        $t$ & 孕周\\
+        $M$ & 体重\\
+        $N_i$ & 每组样本量\\
+        $N$ & 总样本量\\
+        \bottomrule[1.5pt]
+    \end{tabularx}
+\end{table}
+% 其绘制表格的代码及其说明如下。
+% \begin{tcode}
+%     \begin{table}[!htbp]
+%         \caption[标签名]{中文标题}
+%         \begin{tabular}{cc...c}
+%             \toprule[1.5pt]
+%             表头第1个格   & 表头第2个格   & ... & 表头第n个格  \\
+%             \midrule[1pt]
+%             表中数据(1,1) & 表中数据(1,2) & ... & 表中数据(1,n)\\
+%             表中数据(2,1) & 表中数据(2,2) & ... & 表中数据(2,n)\\
+%             ...................................................\\
+%             表中数据(m,1) & 表中数据(m,2) & ... & 表中数据(m,n)\\
+%             \bottomrule[1.5pt]
+%         \end{tabular}
+%     \end{table}
+% \end{tcode}
+
+\bigskip
+
+% table环境是一个将表格嵌入文本的浮动环境。tabular环境的必选参数由每列对应一个格式字符所组成：c表示居中，l表示左对齐，r表示右对齐，其总个数应与表的列数相同。此外，\verb|@{文本}|可以出现在任意两个上述的列格式之间，其中的文本将被插入每一行的同一位置。表格的各行以\verb|\\|分隔，同一行的各列则以\&分隔。 \verb|\toprule| 、\verb|\midrule| 和 \verb|\bottomrule| 三个命令是由booktabs宏包提供的，其中 \verb|\toprule| 和 \verb|\bottomrule| 分别用来绘制表格的第一条（表格最顶部）和第三条（表格最底部）水平线， \verb|\midrule| 用来绘制第二条（表头之下）水平线，且第一条和第三条水平线的线宽为 1.5pt ，第二条水平线的线宽为 1pt 。引用方法与图片的相同。
+
+\section{模型建立与求解}
+    \subsection{\textbf{数据预处理}}
+
+
+    \begin{enumerate}[leftmargin=2em]
+        \item  \textbf{数据清洗}  
+        
+        \hspace*{2em} 本文首先对所有数据进行清洗处理，发现存在部分缺失值。对缺失值进行合理推测后，认定由于疫情与过年期间的特殊因素导致缺失值出现，并对相关数据进行填0操作，确保数据的完整性与可分析性。
+
+        
+        \item  \textbf{数据整合}
+        
+        \hspace*{2em} 将销售流水数据和批发价格数据按照日期、蔬菜品类和单品进行整合，对单位进行统一，形成一致的数据类型，便于后续分析。
+      
+
+    \end{enumerate}
+\subsection{问题一的模型建立与求解}
+\subsubsection{问题一的数据预处理}
+原始数据中，部分商品销售量由于时令影响出现零销售。若直接进行数据分析，易导致相关关系失真。
+因此，考虑到数据可靠性，本文采用季节适配条件进行筛选:将单品销售时间跨度不少于730天、正销量天数不少于90天、累计销量不少于100kg的蔬菜纳入考虑范围，筛选后共保留64个单品，覆盖全部蔬菜品类，且均具有真实有效性。
+\subsubsection{问题一的建模求解}
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{销售量分布规律的求解}
+    
+    \hspace*{2em}设第$c$ 类蔬菜在第 $t$ 天的总销售量为 $Y_{ct}$，则有
 \begin{equation}
-    \bar{Q}_{i,m} = \frac{1}{N_y}\sum_{y=1}^{N_y}\frac{Q_{i,y,m}}{d_m}
+    Y_{ct}=\sum_{i\in I_c}Y_{it}
 \end{equation}
 
-\textbf{（2）月度销量占比 $P_{i,m}$}，用于刻画该月销量占全年的比重、反映需求集中月份：
+其中，$I_c$ 表示属于第$c$类蔬菜的全部单品集合，$Y_{it}$ 表示单品 $i$ 在第 $t$ 天的销售量。
+\hspace*{2em}对数据进行处理后，发现各品类蔬菜中存在少量零销量，正销量部分则存在明显右偏与长尾特征。
+因此，均值等概率分布指标难以准确描述全部数据，故建立\textbf{两部模型}对日品类销量进行描述，通过将数据分为零销量概率与正销量条件分布来刻画分布规律。
+\begin{enumerate}
+    \item \textbf{第一部：零销量概率估计} 
+
+\hspace*{2em}记商品 $i$（品类或单品）在 $n_i$ 个观测日中的销量序列为 $\{Y_{i,t}\}_{t=1}^{n_i}$，零销量概率为：
+
 \begin{equation}
-    P_{i,m} = \frac{1}{N_y}\sum_{y=1}^{N_y}\frac{Q_{i,y,m}}{\displaystyle\sum_{m'=1}^{12}Q_{i,y,m'}}
+ \hat{p}_{0}^{(i)} = \frac{1}{n_i} \sum_{t=1}^{n_i} \mathbf{1}(Y_{it} = 0) \tag{1}
 \end{equation}
+    \item \textbf{第二部：正销量条件分布拟合}
+    
+\hspace*{2em}提取正销量子集 $\mathcal{Y}_i^{+} = \{Y_{i,t} : Y_{i,t} > 0\}$。
+为避免样本量过小造成参数估计不稳定，对正销量样本数量进行筛选。若 $|\mathcal{Y}_i^{+}| < 30$，认定该品类（或单品）有效销售数据不充足，不进行参数拟合。
+对筛选过后的数据，本文选取四种分布作为候选：\textbf{正态分布、}\textbf{对数正态（Lognormal）分布、}\textbf{Gamma 分布、}\textbf{Weibull 分布}，基本契合数据正值右偏特点。
 
-\textbf{（3）月度销售活跃率 $A_{i,m}$}，用于刻画该月有实际销售的日期占比、区分"旺季销量高"与"仅旺季上市"：
-\begin{equation}
-    A_{i,m} = \frac{1}{N_y}\sum_{y=1}^{N_y}\frac{\displaystyle\sum_{t\in\mathcal{T}_{i,y,m}}\mathbf{1}(Y_{i,t}>0)}{d_m}
-\end{equation}
+\end{enumerate}
+\hspace*{2em}经过对数据的初步整理，发现需要在多个正值右偏模型中选取最优解。因此，本文选用极大似然法估计分布参数，并经由AIC对候选分布做出比较，采取AIC较小者作为优选分布；同时通过KS检验验证所选分布的合理性。
+AIC 能够兼顾模型拟合效果与复杂度，而 KS 检验能够从经验分布与理论分布的差异角度进一步检验拟合效果\textsuperscript{\cite{akaike1974}}。 
 
-\textbf{（4）季节指数 $S_{i,m}$}，用于刻画该月日均销量相对全年平均水平的强弱：
-\begin{equation}
-    S_{i,m} = \frac{\bar{Q}_{i,m}}{\displaystyle\frac{1}{12}\sum_{m'=1}^{12}\bar{Q}_{i,m'}}
-\end{equation}
-
-上述指标为后续分布判断、季节聚类与关系分析提供统一的量化基础。
-
-\subsection{子问题一：销量分布规律}
-
-\subsubsection{模型构建}
-
-蔬菜日销量是"当天是否发生销售"与"发生销售时卖出多少"共同生成的半连续变量。采用 hurdle 式两部分布：第一部以零销量概率刻画零膨胀，第二部在正销量条件下拟合连续分布，避免把零点质量强行塞入 Gamma、Lognormal 等仅在正半轴定义的分布。零销量概率估计为
-\begin{equation}
-    \hat{p}_{0,i} = \frac{1}{n_i}\sum_{t=1}^{n_i}\mathbf{1}(Y_{i,t}=0)
-\end{equation}
-其中 $n_i$ 为实体 $i$ 的有效观察天数。对正销量样本 $\mathcal{Y}_i^{+}$，分别以极大似然估计拟合 Normal、Lognormal、Gamma、Weibull 四个候选分布，以 AIC 选择相对最优
-\begin{equation}
-    \mathrm{AIC}_k = 2K_k - 2\ln L_k(\hat{\theta}_k)
-\end{equation}
-其中 $K_k$ 为参数个数，$\ln L_k$ 为对数似然。AIC 只保证候选集合内的相对最优，故再对最优分布作 KS 检验判断绝对拟合
-\begin{equation}
-    D_n = \sup_x \big|F_n(x) - F_{\hat{\theta}}(x)\big|
-\end{equation}
-若 $p_{\mathrm{KS}}\geq0.05$ 则接受该参数近似；否则标记为 KDE 回退，不强行宣称拟合良好。
-
-\subsubsection{求解结果}
+\hspace*{2em}对于KS检验，若 $p_{\text{KS}} \geq 0.05$，表示所选分布合理；否则表示虽然该分布在候选者中相对最优，但绝对拟合仍不充分。
 
 \begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X}
-\toprule
-品类 & 均值/kg & 零销率 & 最优分布 & AIC & KS $p$ 值 \\
-\midrule
-水生根茎类 & 37.1 & 0.91\% & Gamma & 9896.7 & 0.490 \\
-花叶类 & 181.4 & 0.91\% & Gamma & 12442.6 & 0.271 \\
-花菜类 & 38.2 & 1.00\% & Gamma & 9547.1 & 0.334 \\
-茄类 & 20.5 & 4.11\% & Gamma & 8058.8 & 0.549 \\
-辣椒类 & 83.7 & 0.91\% & Lognormal & 11036.2 & 0.508 \\
-食用菌 & 69.5 & 0.91\% & Lognormal & 10840.1 & 0.524 \\
-\bottomrule
-\end{tabularx}
-\caption{六品类销量分布拟合结果}
-\label{tab:dist}
+    \centering
+
+    \begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X
+                                >{\centering\arraybackslash}X
+                                >{\centering\arraybackslash}X
+                                >{\centering\arraybackslash}X
+                                >{\centering\arraybackslash}X
+                                >{\centering\arraybackslash}X}
+        \toprule
+        品类 & 均值/kg & 零销率 & 最优分布 & AIC & KS $p$值 \\
+        \midrule
+        水生根茎类 & 37.1  & 0.91\% & Gamma     & 9896.7  & 0.490 \\
+        花叶类     & 181.4 & 0.91\% & Gamma     & 12442.6 & 0.271 \\
+        花菜类     & 38.2  & 1.00\% & Gamma     & 9547.1  & 0.334 \\
+        茄类       & 20.5  & 4.11\% & Gamma     & 8058.8  & 0.549 \\
+        辣椒类     & 83.7  & 0.91\% & Lognormal & 11036.2 & 0.508 \\
+        食用菌     & 69.5  & 0.91\% & Lognormal & 10840.1 & 0.524 \\
+        \bottomrule
+    \end{tabularx}
+
+    \caption{六类蔬菜日销量分布拟合结果}
+    \label{tab:category_distribution}
 \end{table}
 
-由表 \ref{tab:dist} 可见：品类层零销率仅 0.91\%--4.11\%，呈"几乎每日销售、正销量明显右偏"特征；六品类最优分布为 Gamma 或 Lognormal，KS 检验全部通过（$p>0.27$），参数近似可接受。
+\hspace*{2em}数据结果如表~\ref{tab:category_distribution}。由结果得出，\textbf{品类层面水生根茎类、花叶类、花菜类和茄类的正销量更符合Gamma分布，辣椒类和食用菌更符合对数正态分布。}
+且对应KS检验均大于0.05，表明拟合结果具有较好的合理性。
 
-单品层零销率扩大到 1.74\%--90.93\%，仅 39 个（60.9\%）单品通过 KS 检验、25 个（39.1\%）需 KDE 回退，说明不能为所有单品指定统一分布。
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/Q1箱线图——蔬菜品类正相关.png}
+    \caption{六类蔬菜日销量分布拟合结果}
+    \label{fig:distribution}
+\end{figure}
 
-\subsection{子问题二：单品季节型聚类}
+\hspace*{2em}对照图~\ref{fig:distribution} 拟合结果，本文得出结论：
 
-\subsubsection{模型构建}
+\hspace*{2em}\textbf{从品类层面看，}各品类总体销售较为连续，但在销售规模和波动程度上存在明显差异。其中花叶类销售水平最高且相对稳定，水生根茎类和食用菌的销量波动较强，茄类整体销售水平较低。总体而言，品类层表现为“连续销售、右偏分布、规模分层”的特征。
 
-单品季节画像的 24 维特征由 12 个月销量占比与 12 个月销售活跃率拼接而成
+\hspace*{2em}\textbf{从单品层面看，}不同商品的销售规律差异更加显著。64 个单品的零销率在 1.7%～90.9% 之间变化，表明单品销售覆盖了从常年高频销售到高度季节性销售的多种模式。部分单品全年销售较为连续，而部分商品仅在特定季节集中上市，导致大量零销量日期。同时，不同单品的正销量分布形态也存在明显差异，说明单品层具有较强的个体性。
+
+\hspace*{2em}因此，\textbf{蔬菜品类间聚合后表现较稳定，而单品层则呈现较强的季节性和个体差异。}
+
+
+
+
+\item \textbf{各品类相互关系的求解}
+
+
+\hspace*{2em}蔬菜具有明显的季节性，不同单品的活跃程度存在较大差异，简单的相关分析不能较好刻画相关关系。
+为确保不同年份之间有可比性，将每年7月至次年6月认定为一完整销售年度，并按照春季（3—5 月）、夏季（6—8 月）、秋季（9—11 月）、冬季（12—2 月）四个季节划分。数据覆盖 2020-07 至 2023-06 共三个完整销售年度。
+
+\begin{enumerate}
+
+   \item \textbf{进行K—means聚类}
+
+\hspace*{2em}由于单品种类繁多，互相之间难以直接看出相关关系，本文考虑采用K-means聚类完成相互关系的分析。
+
+\hspace*{2em}\textbf{（1）特征向量构造：} 每个单品以 12 个月销量占比与 12 个月活跃率构成 24 维季节特征向量：
 \begin{equation}
-    \mathbf{x}_i = \big(P_{i,1},\ldots,P_{i,12},\ A_{i,1},\ldots,A_{i,12}\big)^{\top}\in\mathbb{R}^{24}
-\end{equation}
-销量总规模不进入特征，以避免高销量单品仅因规模相近而聚为一类。各特征在 64 个单品间作 Z-score 标准化
+        \mathbf{X}_i = (P_{i,1},\ldots,P_{i,12},\ A_{i,1},\ldots,A_{i,12})^\top
+ \end{equation}
+销量总规模不进入特征，以避免高销量单品仅因规模相近而聚为一类。
+
+\hspace*{2em}\textbf{（2）进行Z-score 标准化：} 占比与活跃率量纲不同，标准化以消除量纲影响、使各维度等权：
 \begin{equation}
     x_{i,j}^{*} = \frac{x_{i,j}-\bar{x}_j}{\sigma_j},\qquad j=1,\ldots,24
 \end{equation}
-K-means 通过最小化簇内平方和（WCSS）确定最优划分
+
+\hspace*{2em}\textbf{（3）确定聚类目标：} K-means 通过最小化簇内平方和（WCSS）确定最优划分：
 \begin{equation}
     \min_{\{\mathcal{C}_c\}_{c=1}^{k}}\ \sum_{c=1}^{k}\sum_{i\in\mathcal{C}_c}\lVert \mathbf{x}_i^{*} - \boldsymbol{\mu}_c \rVert^2
 \end{equation}
-其中 $\mathcal{C}_c$ 为第 $c$ 个簇，$\boldsymbol{\mu}_c$ 为簇中心。采用 K-means++ 初始化，每个 $k$ 重复 100 次随机初始化并取 WCSS 最小者，固定随机种子 20230907。簇数 $k$ 对 $2,\ldots,8$ 分别聚类，综合轮廓系数、Calinski-Harabasz（CH）指数、Davies-Bouldin（DB）指数、年度块 Bootstrap 稳定性（调整兰德指数 ARI）及最小簇规模约束选取。
+其中 $\mathcal{C}_c$ 为第 $c$ 个簇，$\boldsymbol{\mu}_c$ 为簇中心。采用 K-means++ 初始化，对每个 $k$ 重复 100 次随机初始化并取 WCSS 最小者，固定随机种子 $20230907$。
 
-\subsubsection{求解结果}
+\hspace*{2em}\textbf{（4）选取簇数 $k$ ：} K-means 需预先指定 $k$。对 $k=2,\ldots,8$ 分别聚类，综合轮廓系数、Calinski-Harabasz（CH）指数、Davies-Bouldin（DB）指数、年度块 Bootstrap 稳定性（调整兰德指数 ARI）及最小簇规模约束，选择综合最优的 $k$。计算结果如表 \ref{tab:k} 与图\ref{fig:distribution}所示。
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/Q1聚类数比较.png}
+    \caption{K-means 聚类 $k$ 值选取综合指标}
+    \label{fig:K-means}
+\end{figure}
+
 
 \begin{table}[H]
 \centering
@@ -133,89 +300,139 @@ $k$ & 轮廓系数 & CH & DB & 最小簇 & ARI均值 & ARI$\sigma$ \\
 \textbf{5} & \textbf{0.233} & \textbf{15.79} & \textbf{1.475} & \textbf{7} & \textbf{0.566} & \textbf{0.249} \\
 6 & 0.239 & 14.77 & 1.343 & 5 & 0.541 & 0.227 \\
 7 & 0.213 & 14.13 & 1.401 & 5 & 0.493 & 0.239 \\
-8 & 0.216 & 13.43 & 1.220 & 1 & 0.474 & 0.224 \\
+8 & 0.216 & 13.43 & 1.220 & 1 & 0.474 & 0.225 \\
 \bottomrule
 \end{tabularx}
 \caption{K-means 聚类 $k$ 值选取综合指标}
 \label{tab:k}
 \end{table}
 
-由表 \ref{tab:k}：$k=6$ 轮廓系数略高但稳定性与最小簇规模均劣于 $k=5$，$k=8$ 产生单例簇，故综合选取 $k=5$。五簇画像如表 \ref{tab:cluster} 所示。
+\hspace*{2em}由表 \ref{tab:k}：$k=5$ 时轮廓系数（0.233）与 $k=6$（0.239）接近但 Bootstrap 稳定性更高（ARI 0.566 $>$ 0.541），且最小簇规模（7）满足不小于 5 的约束，季节解释清晰，故确定 $k=5$。聚类结果如表 \ref{tab:cluster} 所示。
 
 \begin{table}[H]
 \centering
-\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X}
+\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X}
 \toprule
-簇名 & 规模 & 峰值月 & 春 & 夏 & 秋 & 冬 \\
+簇名 & 规模 & 峰值月 & 主要销售季节 & 代表单品 \\
 \midrule
-初夏型 & 11 & 6 月 & 21.8\% & \textbf{62.7\%} & 9.6\% & 5.9\% \\
-冬季型 & 7 & 12 月 & 7.6\% & 2.4\% & 19.2\% & \textbf{70.8\%} \\
-常年型 & 21 & 10 月 & 18.4\% & 33.2\% & 21.0\% & 27.5\% \\
-春季型 & 8 & 3 月 & \textbf{54.8\%} & 5.8\% & 17.9\% & 21.5\% \\
-夏秋型 & 17 & 9 月 & 9.7\% & 41.2\% & 26.4\% & 22.7\% \\
+初夏型 & 11 & 6 月 & 夏季 & 木耳菜、苋菜 \\
+冬季型 & 7 & 12 月 & 冬季 & 牛肝菌、萝卜 \\
+常年型 & 21 & 10 月 & 四季均匀 & 菠菜、大白菜 \\
+春季型 & 8 & 3 月 & 春季 & 蒜苗、红苋菜 \\
+夏秋型 & 17 & 9 月 & 夏秋 & 白菜、金针菇 \\
 \bottomrule
 \end{tabularx}
-\caption{五类季节型单品画像}
+\caption{五簇销售模式画像}
 \label{tab:cluster}
 \end{table}
 
-由表 \ref{tab:cluster}：常年型占 32.8\%、四季分布最均匀，构成稳定供应的基础盘；初夏型、冬季型、春季型分别集中于夏季、冬季、春季销售，时令特征明显。市场同时存在全年稳定供应品与高度时令品，聚类为后续分层关系分析提供了分组结构。
 
-\subsection{子问题三：相互关系分析}
 
-\subsubsection{模型构建}
+\hspace*{2em}聚类结果表明：64 个单品可归纳为初夏型、冬季型、常年型、春季型、夏秋型五种季节销售模式，其中常年型占 33\%，说明相当一部分蔬菜已实现全年供应。聚类将"品类—单品"两级结构拓展为"品类—单品—季节簇"三级结构，为分层相关分析提供分组依据。
 
-"相互关系"包含季节同步、同向波动、份额消长、活跃重合等多个维度，单一相关系数无法完整刻画，故建立四种互补指标。
+ 
 
-\textbf{（1）季节指数 Pearson 相关 $\rho_{ij}^{\mathrm{SI}}$}，衡量两实体旺淡季曲线的同步程度：
+    
+    \item \textbf{构造单品季节特征}
+  
+    \textbf{（1）月均日销量 $\bar{Q}_{i,m}$} 用于消除不同月份天数差异对销量比较的影响：
+\begin{equation}
+    \bar{Q}_{i,m} = \frac{1}{N_y}\sum_{y=1}^{N_y}\frac{Q_{i,y,m}}{d_m}
+\end{equation}
+
+\textbf{（2）月度销量占比 $P_{i,m}$} 用于刻画该月销量占全年的比重，反映需求的月份集中程度：
+\begin{equation}
+    P_{i,m} = \frac{1}{N_y}\sum_{y=1}^{N_y}\frac{Q_{i,y,m}}{\displaystyle\sum_{m'=1}^{12}Q_{i,y,m'}}
+\end{equation}
+
+\textbf{（3）月度销售活跃率 $A_{i,m}$} 用于刻画该月有实际销售的日期占比，可区分"旺季销量高"与"仅在旺季上市"两种现象：
+\begin{equation}
+    A_{i,m} = \frac{1}{N_y}\sum_{y=1}^{N_y}\frac{\displaystyle\sum_{t\in\mathcal{T}_{i,y,m}}\mathbf{1}(Y_{i,t}>0)}{d_m}
+\end{equation}
+
+\textbf{（4）季节指数 $S_{i,m}$} 用于刻画该月日均销量相对全年平均水平的强弱，$S_{i,m}>1$ 表示高于全年平均，$S_{i,m}<1$ 表示低于全年平均：
+\begin{equation}
+    S_{i,m} = \frac{\bar{Q}_{i,m}}{\displaystyle\frac{1}{12}\sum_{m'=1}^{12}\bar{Q}_{i,m'}}
+\end{equation}
+
+\hspace*{2em}上述四个指标分别从规模、结构、频次、相对强弱四个角度刻画季节特征，为后续数据处理提供统一的量化基础。得到结果如图~\ref{fig:season}所示。
+    
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig_q1_cluster_profile_heatmaps.png}
+    \caption{五个季节型簇的季节指数与销售活跃率双画像}
+    \label{fig:season}
+\end{figure}
+
+
+
+    \item \textbf{多指标分析相关关系}
+    
+    \hspace*{2em}完成上述分析后，需要进一步对不同品类（或单品）之间研究相关关系。为此，本文构建了四个指标进行衡量。
+
+    \textbf{（1）季节指数 Pearson 相关 $\rho_{ij}^{\mathrm{SI}}$} 
+    
+    \hspace*{2em}以季节指数衡量两实体旺淡季曲线的同步程度：
 \begin{equation}
     \rho_{ij}^{\mathrm{SI}} = \frac{\displaystyle\sum_{m=1}^{12}\big(S_{i,m}-\bar{S}_i\big)\big(S_{j,m}-\bar{S}_j\big)}
     {\sqrt{\displaystyle\sum_{m=1}^{12}\big(S_{i,m}-\bar{S}_i\big)^2}\ \sqrt{\displaystyle\sum_{m=1}^{12}\big(S_{j,m}-\bar{S}_j\big)^2}}
 \end{equation}
-正值表示旺季月份接近（同步），负值表示旺淡季错位（互补）。
+\hspace*{2em}正值表示旺季月份接近（同步），负值表示旺淡季错位（互补）。
 
-\textbf{（2）分季节销量 Spearman 相关 $\rho_{ij}^{\mathcal{S}}$}，衡量同一季节内两实体日销量的同向波动。为压缩右偏并消除月份基准差异，先对日销量做对数变换并减去所属年月均值：
+
+\textbf{（2）分季节销量 Spearman 相关 $\rho_{ij}^{\mathcal{S}}$} 
+
+\hspace*{2em}用于衡量同一季节内两实体日销量的同向波动。为压缩右偏并消除不同月份基准水平差异，先对日销量做对数变换并减去所属年月均值：
 \begin{equation}
     \tilde{Y}_{i,t} = \log(1+Y_{i,t}) - \frac{1}{|\mathcal{T}_{i,y,m}|}\sum_{t'\in\mathcal{T}_{i,y,m}}\log(1+Y_{i,t'})
 \end{equation}
-再在各季节 $\mathcal{S}$ 内计算去趋势序列的 Spearman 秩相关系数：
+\hspace*{2em}再在各季节 $\mathcal{S}$ 内计算去趋势序列的 Spearman 秩相关系数：
 \begin{equation}
     \rho_{ij}^{\mathcal{S}} = 1 - \frac{6\sum_{t\in\mathcal{S}}d_{ij,t}^{2}}{n_{\mathcal{S}}(n_{\mathcal{S}}^{2}-1)}
 \end{equation}
-其中 $d_{ij,t}$ 为两序列在季节 $\mathcal{S}$ 内的秩差，$n_{\mathcal{S}}$ 为该季节天数。
+其中 $d_{ij,t}$ 为 $\tilde{Y}_{i,t}$ 与 $\tilde{Y}_{j,t}$ 在季节 $\mathcal{S}$ 内的秩差，$n_{\mathcal{S}}$ 为该季节天数。
 
-\textbf{（3）分季节销量份额 Spearman 相关}，用于剥离共同客流造成的总量同涨、衡量销售结构内部的此消彼长。将每日销量转换为当日份额：
+\textbf{（3）分季节销量份额 Spearman 相关} 
+
+\hspace*{2em}用于剥离共同客流造成的同时上涨。将每日销量转换为当日份额：
 \begin{equation}
     R_{i,t}^{\mathcal{S}} = \frac{Y_{i,t}}{\sum_{j\in\text{level}}Y_{j,t}},\qquad t\in\mathcal{S}
 \end{equation}
+\hspace*{2em}再按季节计算份额序列的 Spearman 相关，负值提示销售份额竞争或错位。
 
-\textbf{（4）活跃日 Jaccard 重合度 $J_{ij}$}，衡量两实体经常同期有销售的活跃日集合的重合程度：
+\textbf{（4）活跃日 Jaccard 重合度 $J_{ij}$} 
+
+\hspace*{2em}用于衡量两实体经常同期有销售的活跃日集合的重合程度：
 \begin{equation}
     J_{ij} = \frac{|A_i \cap A_j|}{|A_i \cup A_j|}
 \end{equation}
-其中 $A_i=\{t:Y_{i,t}>0\}$ 为正销售日集合。
+其中 $A_i=\{t:Y_{i,t}>0\}$ 为正销售日集合，$J_{ij}$ 越高表示同期销售程度越高。
 
-对关键指标采用 7 日移动块 Bootstrap（200 次重采样）估计 95\% 置信区间，保留日销量序列的自相关结构；对大量实体对的检验采用 Benjamini-Hochberg（BH）校正控制错误发现率，并将 $|\rho|\geq0.30$ 且区间不跨 0 的关系标记为"较明确"。
+\hspace*{2em}由于日销量序列存在时间依赖，采用 7 日移动块 Bootstrap（200 次重采样）估计 95\% 置信区间进行可信度估量，并采用 Benjamini-Hochberg（BH）校正控制错误发现率（FDR），避免多重比较导致的假阳性。
 
-\subsubsection{求解结果}
+\end{enumerate}
+\end{enumerate}
 
-六品类月度季节指数曲线如图 \ref{fig:cat_season} 所示，品类间及季节簇间的销量与份额关系矩阵如图 \ref{fig:rel_matrix} 所示。
-
+\hspace*{2em}最终得到结果如图~\ref{fig:Person}与图~\ref{fig:Sperman}所示。
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.85\textwidth]{fig_cat_season.png}
-\caption{六品类月度季节指数曲线}
-\label{fig:cat_season}
+    \centering
+    \includegraphics[width=1.2\textwidth]{figures/Q1蔬菜品类月度季节指数.png}
+    \caption{ 六品类月度季节指数曲线}
+    \label{fig:Person}
 \end{figure}
 
 \begin{figure}[H]
-\centering
-\includegraphics[width=0.85\textwidth]{fig_rel_matrix.png}
-\caption{品类与季节簇的总量共变及份额竞争矩阵}
-\label{fig:rel_matrix}
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig_q1_hierarchical_relationships.png}
+    \caption{ 品类与季节簇的总量共变及份额竞争矩阵}
+    \label{fig:Sperman}
 \end{figure}
-
-\textbf{（1）品类间关系（15 对）。} 四种指标的计算结果汇总于表 \ref{tab:cat_rel}。
+ 
+故得到\textbf{结论：}
+\begin{enumerate}
+    \item \textbf{品类间关系（15 对）}
+    
+ \hspace*{2em}四种指标的计算结果汇总于表 \ref{tab:cat_rel}。
 
 \begin{table}[H]
 \centering
@@ -235,9 +452,16 @@ $k$ & 轮廓系数 & CH & DB & 最小簇 & ARI均值 & ARI$\sigma$ \\
 \label{tab:cat_rel}
 \end{table}
 
-由表 \ref{tab:cat_rel} 并结合图 \ref{fig:cat_season}、图 \ref{fig:rel_matrix} 可见：品类全年销量相关均为正（$[0.415,0.692]$），最强为花叶类—辣椒类，冬季最强、夏季分化最大；但全年份额相关可降至 $-0.535$，说明总量同涨与结构此消彼长并存，总量相关与份额相关不可互相替代。
 
-\textbf{（2）簇间关系（10 对）。} 五簇聚合销量后的关系结果汇总于表 \ref{tab:clu_rel}，对应矩阵见图 \ref{fig:rel_matrix}。
+
+\hspace*{2em}
+由表 \ref{tab:cat_rel} 并结合图 \ref{fig:Person}、图 \ref{fig:Sperman} 可见：
+品类全年销量相关均为正（$[0.415,0.692]$），最强为花叶类—辣椒类，冬季最强、夏季分化最大；但全年份额相关可降至 $-0.535$，说明总量同涨与结构此消彼长并存，总量相关与份额相关不可互相替代。
+
+\item \textbf{簇间关系（10 对）}
+
+
+ \hspace*{2em}五簇聚合销量后的关系结果汇总于表 \ref{tab:clu_rel}，对应矩阵见图 \ref{fig:Sperman}。
 
 \begin{table}[H]
 \centering
@@ -254,9 +478,14 @@ $k$ & 轮廓系数 & CH & DB & 最小簇 & ARI均值 & ARI$\sigma$ \\
 \label{tab:clu_rel}
 \end{table}
 
-由表 \ref{tab:clu_rel} 可见：簇间销量相关（$[-0.018,0.393]$）显著弱于品类层，说明聚类有效分离了不同销售模式；常年型—冬季型相关最高，春季型—夏秋型呈峰值错位，初夏型—冬季型份额相关为 $-0.787$，但仅解释为层级内组成变化。
+\hspace*{2em}由表 \ref{tab:clu_rel} 可见：
+簇间销量相关（$[-0.018,0.393]$）显著弱于品类层，说明聚类有效分离了不同销售模式；常年型—冬季型相关最高，春季型—夏秋型呈峰值错位，初夏型—冬季型份额相关为 $-0.787$，但仅解释为层级内组成变化。
 
-\textbf{（3）单品间关系（2016 对）。} 关系强度分布如表 \ref{tab:sku_dist} 所示，代表性单品对的销量与季节关系如图 \ref{fig:sku_pairs} 所示，两对代表性关系的完整指标列于表 \ref{tab:sku_rep}。
+
+
+\item \textbf{单品间关系（2016 对）}
+
+ \hspace*{2em}关系强度分布如表 \ref{tab:sku_dist} 所示，代表性单品对的销量与季节关系如图 \ref{fig:sku_pairs} 所示，两对代表性关系的完整指标列于表 \ref{tab:sku_rep}。
 
 \begin{table}[H]
 \centering
@@ -273,12 +502,14 @@ $k$ & 轮廓系数 & CH & DB & 最小簇 & ARI均值 & ARI$\sigma$ \\
 \label{tab:sku_dist}
 \end{table}
 
+
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{fig_sku_pairs.png}
+\includegraphics[width=\textwidth]{figures/fig_q1_representative_pairs.png}
 \caption{代表性单品对的销量与季节关系}
 \label{fig:sku_pairs}
 \end{figure}
+
 
 \begin{table}[H]
 \centering
@@ -293,158 +524,72 @@ $k$ & 轮廓系数 & CH & DB & 最小簇 & ARI均值 & ARI$\sigma$ \\
 \caption{代表性单品对关系指标}
 \label{tab:sku_rep}
 \end{table}
+\hspace*{2em}由表 \ref{tab:sku_dist} 可见：
+2016 对中仅 18 对（0.89\%）为较明确关系（17 正 1 负），221 对为弱至中等，其余 1777 对（88.1\%）无显著关联。由表 \ref{tab:sku_rep} 并结合图 \ref{fig:sku_pairs}：最高相关为西兰花与净藕(1)（0.442），唯一明确负相关为西峡花菇(1)与西峡香菇(1)（$-0.326$），主要体现上市期错位。单品层关系显著弱于品类层，统计上稳定的共变关系稀少。
 
-由表 \ref{tab:sku_dist}：2016 对中仅 18 对（0.89\%）为较明确关系（17 正 1 负），221 对为弱至中等，其余 1777 对（88.1\%）无显著关联。由表 \ref{tab:sku_rep} 并结合图 \ref{fig:sku_pairs}：最高相关为西兰花与净藕(1)（0.442），唯一明确负相关为西峡花菇(1)与西峡香菇(1)（$-0.326$），主要体现上市期错位。单品层关系显著弱于品类层，统计上稳定的共变关系稀少。
 
-\subsection{模型检验}
 
-\textbf{分布检验。} 六品类全部通过 KS 检验，单品层通过率 60.9\%，未通过者明确标记为 KDE 回退。
 
-\textbf{聚类稳定性。} $k=5$ 的年度块 ARI 为 0.566$\pm$0.249，远高于随机聚类期望，聚类结构稳定，最小簇规模满足约束。
+\end{enumerate}
 
-\textbf{多重比较控制。} 对全部实体对的 $p$ 值进行 BH 校正，控制错误发现率。
 
-\textbf{不删除弱关系。} 所有关系均保留在完整矩阵中，仅以可信度标记区分强弱。
 
-\textbf{局限。} 零销量可能来自缺货而非真实零需求；所有关系均不作因果推断；份额负相关受组成约束，不直接认定为商品替代。
 
-\newpage
-\section{第二问：品类级补货与定价优化}
 
-\subsection{问题分析与建模思路}
+\subsection{问题二的模型建立与求解} 
 
-题目要求确定未来一周（2023 年 7 月 1--7 日）六品类每日的补货总量与定价策略，使商超收益最大。这一决策问题的核心结构可从三个层次理解。
+\subsubsection{问题二的建模求解过程}
 
-\paragraph{决策变量与时间结构。} 决策者在每日凌晨做出当日的补货量 $q_{ct}$ 与定价 $p_{ct}$ 的决策。蔬菜多数不能跨日储存，不存在跨日库存转移，因此各日决策相互独立，问题在时间维度上可拆分为七次日级子决策。
+\begin{enumerate}
 
-\paragraph{不确定性来源。} 次日需求 $D_{ct}$ 和批发成本 $W_{ct}$ 在决策时点均为未知。更重要的是，六品类之间存在需求共振——第一问已证品类间销量相关均为正，不能逐品类独立处理。
+    \item \textbf{建立决策变量与数据口径}
 
-\paragraph{内生性挑战。} 历史售价并非外生给定，而是商超根据供需状况主动调整的结果：需求旺盛时商超往往提价，临闭时打折。直接对 $\ln Q$ 关于 $\ln P$ 做普通最小二乘，会把"可观测到的市场状态"混入价格系数，导致估计偏误。
-
-综合以上三层结构，建模路线自然确定为四个依次衔接的阶段：（1）在半参数框架下识别控制可观测状态后的条件价格响应，纠正内生偏误；（2）将价格效应剥离后预测价格中性基础需求，为任意候选售价还原需求曲线；（3）以第一问发现的品类间正相关为依据，生成保留跨品类共振的联合残差场景；（4）在场景集上求解均值—下尾 CVaR 双目标随机优化。
-
-此外，由于决策时点（凌晨）的实际批发成本尚不完全可知，模型将成本预测嵌入场景生成环节——对未来一周每个品类每日的批发成本与需求联合建模，使优化在价格与数量两个维度上同时面对不确定性。
-
-\subsection{决策变量与数据口径}
-
-基于上述三层问题结构，决策变量取各品类每日的损耗前进货量 $q_{ct}$ 与成本加成率 $m_{ct}$，建议售价由预测成本与加成率联合确定。具体口径如下。
+\hspace*{2em}设品类集合 $\mathcal{C}=\{$水生根茎类、花叶类、花菜类、茄类、辣椒类、食用菌$\}$，决策日集合 $\mathcal{T}=\{2023\text{-}07\text{-}01,\ldots,07\text{-}07\}$。决策变量为各日各品类的损耗前补货量 $q_{ct}$ 与成本加成率 $m_{ct}$，建议售价由预测成本与加成率联合确定：
 \begin{equation}
     p_{ct} = \hat{W}_{ct}\big(1+m_{ct}\big),\qquad c\in\mathcal{C},\ t\in\mathcal{T}
 \end{equation}
 
-历史销量 $Q_{ct}$ 取品类日毛销售量，售价 $P_{ct}$ 取销量加权均价，批发成本 $W_{ct}$ 取当日已售单品批发价的销量加权均值（因附件不含真实采购批次，仅作成本代理），近期损耗率 $\lambda_c$ 取最近 30 天的销量加权值。蔬菜多数不能跨日销售，故不设跨日库存转移。
+历史销量 $Q_{ct}$ 取品类日毛销售量，售价 $P_{ct}$ 取销量加权均价，批发成本 $W_{ct}$ 取当日已售单品批发价的销量加权均值，近期损耗率 $\lambda_c$ 取最近 30 天的销量加权值。
 
-\subsection{模型构建}
+   \item \textbf{建立价格--销量关系模型}
 
-模型构建遵循"先识别价格效应 $\to$ 再预测价格中性需求 $\to$ 再构造联合不确定场景 $\to$ 最后求解随机优化"的顺序。每一步的输出是下一步的输入，形成逐层传递的推理链条。下面依次展开。
+\hspace*{2em}蔬菜销量不仅受到销售价格的影响，还与季节、星期、节假日以及历史销售情况等因素有关。
+若直接对价格与销量进行回归，其他因素可能对价格效应的估计产生干扰。因此，本文采用部分线性模型，
+将销售价格作为主要解释变量，其余影响因素作为控制变量，建立价格与销量之间的关系：
 
-\subsubsection{半参数条件价格响应模型}
-
-价格响应的识别面临内生性：$\ln P_{ct}$ 与误差项 $u_{ct}$ 相关，因为商超在需求高时倾向于提价，直接 OLS 会得到向上偏误的价格系数，进而导致定价策略严重偏离最优。为打破这一内生关联，对每一品类建立部分线性模型——价格系数 $\theta_c$ 为全局参数（即"控制可观测状态后的平均价格响应"），非价格因素的影响由非参数函数 $g_c(Z_{ct})$ 吸收。令 $Y_{ct}=\ln(Q_{ct}+1)$、$X_{ct}=\ln P_{ct}$，控制变量 $Z_{ct}$ 包含星期、月份、年内日周期、时间趋势、当期成本、销量与价格的多个滞后项及波动率等：
 \begin{equation}
-    Y_{ct} = \theta_c X_{ct} + g_c(Z_{ct}) + u_{ct},\qquad X_{ct} = m_c(Z_{ct}) + v_{ct}
+    Y_{ct}=\theta_c X_{ct}+g_c(Z_{ct})+u_{ct},
+    \qquad
+    X_{ct}=m_c(Z_{ct})+v_{ct}.
 \end{equation}
-采用五折递增式时间切分分别训练 $E(Y|Z)$、$E(X|Z)$ 的 GBDT，每折只用其之前的日期训练，拼接测试折残差后计算正交斜率：
+
+其中，$Y_{ct}=\ln(Q_{ct}+1)$ 为第 $c$ 类蔬菜第 $t$ 日的对数销量，
+$X_{ct}=\ln P_{ct}$ 为对数销售价格，$\theta_c$ 为价格响应系数，
+$Z_{ct}$ 为控制变量，包括星期、月份、时间趋势、当期成本以及历史销量和价格等信息。
+$g_c(\cdot)$ 和 $m_c(\cdot)$ 用于描述控制变量与销量、价格之间的关系，
+$u_{ct}$ 和 $v_{ct}$ 为随机误差项。
+
+
+\hspace*{2em}接着分三步。第一步，用梯度提升树（GBDT）分别拟合 ${E}[Y|Z]$ 和 ${E}[X|Z]$，将估计值从原始数据中去除，得到剔除了混杂因素后的残差：
 \begin{equation}
-    \tilde{Y}_{ct}=Y_{ct}-\hat{m}_{Y,c}(Z_{ct}),\quad \tilde{X}_{ct}=X_{ct}-\hat{m}_{X,c}(Z_{ct}),\quad
-    \hat{\theta}_c=\frac{\sum_t \tilde{X}_{ct}\tilde{Y}_{ct}}{\sum_t \tilde{X}_{ct}^{2}}
+    \tilde{Y}_{ct} = Y_{ct} - \hat{g}_c(Z_{ct}), \qquad \tilde{X}_{ct} = X_{ct} - \hat{m}_c(Z_{ct}).
 \end{equation}
-对残差对作 7 日移动块 Bootstrap 估计标准误与 95\% 区间。因部分价格变化来自主动调价而非外生冲击，模型先作经验贝叶斯收缩，再作单调投影并限定有经济意义的取值区间：
+
+\hspace*{2em}第二步，对 $\tilde{Y}_{ct}$ 关于 $\tilde{X}_{ct}$ 做普通最小二乘回归，斜率即为价格弹性 $\hat{\theta}_c$。
+
+\hspace*{2em}第三步，用五折时间序列交叉验证确保训练集严格早于测试集，避免信息泄露。
+
+用 7 日移动窗口的块自举法（Bootstrap）计算弹性系数的标准误和 95\% 置信区间。部分品类的价格变化主要来自商超主动调价，原始估计可能不可靠，因此引入收缩机制：若某个品类的弹性估计本身不够稳定，则向全品类合并后的公共弹性收缩；
+若某品类的弹性估计为正，表明价格与销量呈正向关系，与需求理论中价格与需求量通常呈反向变动的基本规律不一致\textsuperscript{\cite{marshall1920}}；同时，已有实证研究表明，不同品类及估计方法可能导致价格弹性估计存在较大差异\textsuperscript{\cite{tellis1988}}。因此，对于此类异常估计值，本文采用全品类合并后的公共弹性进行收缩替代。最终采用的弹性系数为
 \begin{equation}
     \tilde{\theta}_c = \mathrm{Proj}_{[-3,-0.05]}\Big\{\omega_c\hat{\theta}_c + (1-\omega_c)\hat{\theta}_0\Big\}
 \end{equation}
-其中 $\hat{\theta}_0$ 为全品类合并响应，$\omega_c$ 为经验贝叶斯权重。若某品类原始响应非负（如茄类、辣椒类），则直接回退使用全品类合并响应，避免正斜率驱动不符合经济规律的无限提价。
+其中 $\hat{\theta}_0$ 为全品类合并弹性，$\omega_c$ 为经验贝叶斯权重，投影操作 $\mathrm{Proj}_{[-3,-0.05]}$ 将结果限制在合理的区间内（弹性绝对值不超过 3、不低于 0.05）。
 
-该子模型的输出 $\tilde{\theta}_c$ 为后续需求预测提供关键输入：对于任意候选售价 $p$，需求对价格的弹性响应可由 $\tilde{\theta}_c \ln p$ 精确还原。
+\hspace*{2em}一旦知道了每个品类的价格弹性，就可以对任意候选售价 $p$，精确计算出它能把需求提升或抑制多少。
 
-\subsubsection{价格中性基础需求预测}
+\hspace*{2em}五折递增式时间验证结果如表 \ref{tab:q2_forecast} 所示。
 
-若直接对原始销量做预测，模型会把"商超根据市场需求调价"的反向关联混入需求估计——旺季时销量高恰好因为提价而非真实需求高，导致预测扭曲。为避免这一混淆，先定义价格中性潜变量，即剥离价格效应后的"在标准价格水平下的潜在需求"：
-\begin{equation}
-    A_{ct} = Y_{ct} - \tilde{\theta}_c \ln P_{ct}
-\end{equation}
-对 $A_{ct}$ 预测后，对未来任意候选售价 $p$ 的需求由同一条指数响应曲线还原：
-\begin{equation}
-    \hat{D}_{ct}(p) = \Big[\exp\big\{\hat{A}_{ct} + \tilde{\theta}_c \ln p\big\} - 1\Big]_+
-\end{equation}
-预测特征统一采用对未来 7 天均已知的对齐滞后量（最小滞后 7 日），不使用 t--1 递归预测值充当观测，避免时间泄漏。为使复杂模型只在确有增益时进入，令 GBDT 预测与上周同日季节朴素预测按滚动验证 WAPE 最小化选择权重 $\nu_c$；成本预测在 $\ln W$ 尺度上采用同一自适应加权原则。
-
-\subsubsection{联合残差场景生成}
-
-第一问表明六品类全年销量相关均为正，说明市场层面的需求波动在品类间存在共振。若逐品类独立抽样残差，会人为割裂跨品类需求共振，在低需求场景中过度分散风险，低估联合亏损概率。为保留品类间相关结构，将六品类需求残差与六品类对数成本残差按共同日期拼接为 12 维向量
-\begin{equation}
-    \mathbf{r}_t = \big(e_{1t}^{D},\ldots,e_{6t}^{D},\ e_{1t}^{W},\ldots,e_{6t}^{W}\big)^{\top}
-\end{equation}
-截尾至各维 1\%--99\% 分位并中心化，再从全部可用连续 7 日块中有放回抽取 600 个，块内顺序保持不变，从而同时保留品类间相关、需求—成本相关与周内自相关。
-
-\subsubsection{损耗、销售量与场景利润}
-
-$q_{ct}$ 为损耗前进货量，损耗率 $\lambda_c$ 下的可供销售量为 $(1-\lambda_c)q_{ct}$，实际销售量取潜在需求与可售量的较小者；所有进货均按预测成本支付：
-\begin{equation}
-    S_{ct}^{(\omega)} = \min\big\{D_{ct}^{(\omega)}(p_{ct}),\ (1-\lambda_c)q_{ct}\big\},\qquad
-    \Pi_{op}^{(\omega)} = \sum_t\sum_c\Big[p_{ct} S_{ct}^{(\omega)} - W_{ct}^{(\omega)} q_{ct}\Big]
-\end{equation}
-缺货造成的长期顾客损失以商誉成本代理：当需求超过可售量且单位毛利为正时，按超额需求比例扣减，得服务调整利润 $\Pi_{svc}=\Pi_{op}-G$。
-
-上述定义体现了蔬菜销售的核心约束：补货量 $q_{ct}$ 在决策时点确定后不可变更，实际可售量因损耗缩减为 $(1-\lambda_c)q_{ct}$；销量进一步受限于需求侧——当需求超过可售量时发生缺货，实际销售取二者较小值。缺货不仅损失即时利润，还可能损害顾客忠诚度，因此用商誉成本 $G$ 对超额缺货场景进行惩罚。
-
-\subsubsection{均值—下尾 CVaR 目标与决策边界}
-
-传统期望利润最大化仅关注均值，可能选择在大多数场景盈利但偶尔产生巨额亏损的策略。蔬菜经营中，连续亏损会迅速侵蚀现金流并影响后续补货能力，因此需要同时控制尾部风险。下尾 CVaR 取利润分布最差 $\beta=10\%$ 部分的均值（数值越高越好，与期望利润同单位），对亏损场景的敏感度高于普通方差，是随机规划中控制尾部风险的经典工具。将均值与下尾加权组合，允许决策者在期望收益与尾部安全之间灵活权衡：
-\begin{equation}
-    \mathrm{LCVaR}_{\beta}(\Pi) = \max_{\eta}\Big\{\eta - \frac{1}{\beta\Omega}\sum_{\omega}\big(\eta - \Pi^{(\omega)}\big)_+\Big\}
-\end{equation}
-综合目标为均值与下尾的加权组合，并加入参考加价正则以限制对历史价格区间边缘的过度外推：
-\begin{equation}
-    \max\ J = (1-\gamma)\,\mathbb{E}\big[\Pi_{svc}\big] + \gamma\,\mathrm{LCVaR}_{0.10}\big(\Pi_{svc}\big)
-    - \lambda_{ref}\sum_t\sum_c\big(m_{ct} - m_c^{med}\big)^2
-\end{equation}
-加成率边界取自最近 365 天的历史分位，并约束相邻两日变化幅度；补货量非负且不超过上界：
-\begin{equation}
-    m_c^{L}\leq m_{ct}\leq m_c^{U},\quad \big|m_{ct}-m_{c,t-1}\big|\leq \Delta m_c,\quad 0\leq q_{ct}\leq q_c^{U}
-\end{equation}
-主方案取 $\gamma=0.25$、$\beta=0.10$、$\lambda_{ref}=80$、商誉系数 $\eta=0.10$；同时求解 $\gamma=0$ 与 $\gamma=0.50$ 作风险对照，并对关键参数作敏感性重优化。
-
-\subsection{求解方法}
-
-模型用 Python 实现：pandas 处理日级数据，scikit-learn 的 HistGradientBoostingRegressor 承担 DML 辅助回归与需求/成本预测，SciPy 负责差分进化（DE）与 SLSQP 求解，随机种子固定为 20230907。价格响应区间用 400 次 7 日移动块重采样；场景优化用 600 个联合 7 日块。求解采用"逐日 DE 生成可行初值 $\rightarrow$ 周级 SLSQP 联合优化"的两阶段策略：先把 7 天 $\times$ 6 品类的 42 个加成率与 42 个补货量作为整体决策变量，在同一条七日场景内先求和再计算下尾均值，避免把七个每日尾部指标直接相加。
-
-\subsection{求解结果与分析}
-
-\subsubsection{价格响应估计}
-
-六品类条件价格响应的估计、95\% 区间与优化采用值如表 \ref{tab:q2_resp} 所示，对应图形见图 \ref{fig:q2_response}。
-
-\begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{>{\hsize=1.0\hsize\centering\arraybackslash}X>{\hsize=0.8\hsize\centering\arraybackslash}X>{\hsize=1.6\hsize\centering\arraybackslash}X>{\hsize=0.8\hsize\centering\arraybackslash}X>{\hsize=0.8\hsize\centering\arraybackslash}X}
-\toprule
-品类 & 原始 $\theta$ & 95\% 块 Bootstrap 区间 & 优化用 $\theta$ & 合并回退 \\
-\midrule
-水生根茎类 & $-1.858$ & $[-2.344,-1.335]$ & \textbf{$-1.688$} & 否 \\
-花叶类 & $-0.161$ & $[-0.878,0.609]$ & $-0.181$ & 否 \\
-花菜类 & $-1.009$ & $[-1.595,-0.202]$ & \textbf{$-0.861$} & 否 \\
-茄类 & 0.270 & $[-0.698,1.073]$ & $-0.246$ & \textbf{是} \\
-辣椒类 & 0.061 & $[-0.140,0.244]$ & $-0.246$ & \textbf{是} \\
-食用菌 & $-0.246$ & $[-0.935,0.369]$ & $-0.246$ & 否 \\
-\bottomrule
-\end{tabularx}
-\caption{品类条件价格响应估计}
-\label{tab:q2_resp}
-\end{table}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\textwidth]{fig_q2_response.png}
-\caption{条件价格响应估计与优化采用值}
-\label{fig:q2_response}
-\end{figure}
-
-由表 \ref{tab:q2_resp}：水生根茎类和花菜类的 95\% 区间整体低于 0，价格响应识别最稳，优化采用值分别约 $-1.69$ 与 $-0.86$，模型因此在这两类商品上具有较高的定价弹性灵敏度；茄类和辣椒类原始斜率为非负，意味着控制变量后仍无法识别出显著的需求—价格负向关系，缺乏经济单调性。模型回退到全品类合并响应 $-0.246$，并相应收紧其加价上界，避免在弱识别基础上做出极端定价决策。该表支持"控制可观测状态后的条件价格响应"解释，不支持把六个系数全部写成显著因果弹性。
-
-\subsubsection{需求与成本预测回测}
-
-五折递增式时间验证结果如表 \ref{tab:q2_forecast} 所示。
 
 \begin{table}[H]
 \centering
@@ -464,82 +609,181 @@ $q_{ct}$ 为损耗前进货量，损耗率 $\lambda_c$ 下的可供销售量为 
 \label{tab:q2_forecast}
 \end{table}
 
-由表 \ref{tab:q2_forecast}：六品类加权需求 WAPE 为 35.88\%，低于季节朴素法的 39.85\%，相对误差下降约 10\%；成本 WAPE 为 15.28\%。需求 80\% 经验区间平均覆盖率 74.36\%，略低于名义水平，说明点预测之外必须保留残差场景——若完全依赖点预测做确定性优化，会系统性低估低需求风险。
+\hspace*{2em}由表 \ref{tab:q2_forecast}：六品类加权需求预测的平均误差（WAPE）为 35.88\%，比直接用季节规律预测的 39.85\% 低了约 10\%；成本预测的平均误差为 15.28\%。值得注意的是，需求的预测区间覆盖率只有 74.36\%（目标值是 80\%），说明即使把预测区间考虑进去，仍然存在不少出乎意料的日子——这进一步验证了必须保留多情景随机优化，而不能把点预测当作确定性的未来需求。600 个联合情景的相关结构与历史数据的偏差仅为 0.069，说明情景生成较好地保留了品类之间的联动效应。
 
-\subsubsection{未来一周补货与定价策略}
 
-主方案给出的 2023 年 7 月 1--7 日各品类日补货总量与定价策略如图 \ref{fig:q2_strategy}、图 \ref{fig:q2_similarity} 及表 \ref{tab:q2_strategy} 所示，每日汇总见表 \ref{tab:q2_daily}，一周品类汇总见表 \ref{tab:q2_cat}。
+\hspace*{2em}六品类价格弹性的估计、95\% 置信区间与优化采用值如表 \ref{tab:q2_resp} 所示，对应图形见图 \ref{fig:q2_response}。
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\hsize=1.0\hsize\centering\arraybackslash}X>{\hsize=0.8\hsize\centering\arraybackslash}X>{\hsize=1.6\hsize\centering\arraybackslash}X>{\hsize=0.8\hsize\centering\arraybackslash}X>{\hsize=0.8\hsize\centering\arraybackslash}X}
+\toprule
+品类 & 原始 $\theta$ & 95\% 块 Bootstrap 区间 & 优化用 $\theta$ & 合并回退 \\
+\midrule
+水生根茎类 & $-1.858$ & $[-2.344,-1.335]$ & \textbf{$-1.688$} & 否 \\
+花叶类 & $-0.161$ & $[-0.878,0.609]$ & $-0.181$ & 否 \\
+花菜类 & $-1.009$ & $[-1.595,-0.202]$ & \textbf{$-0.861$} & 否 \\
+茄类 & $0.270$ & $[-0.698,1.073]$ & $-0.246$ & \textbf{是} \\
+辣椒类 & $0.061$ & $[-0.140,0.244]$ & $-0.246$ & \textbf{是} \\
+食用菌 & $-0.246$ & $[-0.935,0.369]$ & $-0.246$ & 否 \\
+\bottomrule
+\end{tabularx}
+\caption{品类价格弹性估计}
+\label{tab:q2_resp}
+\end{table}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{fig_q2_strategy.png}
+\includegraphics[width=0.85\textwidth]{figures/fig_q2_price_response_forest.png}
+\caption{价格弹性估计与优化采用值}
+\label{fig:q2_response}
+\end{figure}
+
+\hspace*{2em}由表 \ref{tab:q2_resp}：水生根茎类和花菜类的弹性置信区间完全位于负值范围，说明这两类商品的需求对价格很敏感——降价能明显带动销量、涨价会明显抑制需求，模型对这两类的定价判断比较可靠。茄类和辣椒类的原始估计为正，说明在控制了季节、星期等因素后仍无法从数据中识别出清晰的降价-增量关系，模型回退到全品类统一的弹性值 $-0.246$，并相应收紧了这两类的最高加价幅度，避免在信息不足时做出极端定价决策。
+
+\item \textbf{建立成本预测模型}
+
+\hspace*{2em}补货决策需要在凌晨做出，但当日的实际进货成本在决策时点尚未完全可知。若成本预测偏差较大，基于不准确成本计算的补货量和定价都会失效，因此需要提前预测未来一周各品类每日的进货成本。
+
+\hspace*{2em}成本预测同时运行两个模型并根据历史表现动态分配权重。第一个是梯度提升树（GBDT）模型，输入包括星期、月份、历史成本滞后项、品类销量信息等，用于捕获非线性规律。第二个是季节朴素模型——直接用上年同期的成本作为预测值，作为一个简单但稳健的基准。在历史数据上做五折时间序列验证，记录每个模型在每一折的预测误差。若 GBDT 在某品类上持续优于朴素模型，就赋予它更大的权重；若数据不足导致 GBDT 过拟合，权重自动回退到朴素模型。设 GBDT 模型和季节朴素模型在验证集上的预测均方误差分别为 $\mathrm{MSE}_c^{\mathrm{GBDT}}$ 和 $\mathrm{MSE}_c^{\mathrm{naive}}$，则 GBDT 的权重为
+\begin{equation}
+    w_c = \max\left\{0,\ 1 - \frac{\mathrm{MSE}_c^{\mathrm{GBDT}}}{\mathrm{MSE}_c^{\mathrm{naive}}}\right\},
+\end{equation}
+\hspace*{2em}即 GBDT 误差低于朴素基准时赋予正权重，否则权重为 0、完全回退到朴素模型。最终预测进货成本为两者的加权组合：
+\begin{equation}
+    \hat{W}_{ct} = w_c \cdot \hat{W}_{ct}^{\mathrm{GBDT}} + (1-w_c) \cdot \hat{W}_{ct}^{\mathrm{naive}}.
+\end{equation}
+\item \textbf{建立联合需求场景模型}
+
+\hspace*{2em}有了价格弹性和成本预测，理论上可以直接预测未来一周每天每个品类的需求量。但这里存在一个实际困难：预测不可能完全准确。表 \ref{tab:q2_forecast} 显示需求预测的平均误差（WAPE）约为 36\%，区间覆盖率也低于目标值。若基于一个有 36\% 误差的单一数值做补货决策，要么经常缺货、要么经常积压。因此，模型不给出单一预测值，而是生成一组覆盖各种可能性的需求情景。
+
+\hspace*{2em}在做需求预测之前，需要先从历史销量中剔除价格因素的影响，得到一个''在正常价格水平下的潜在需求''：
+\begin{equation}
+    A_{ct} = Y_{ct} - \tilde{\theta}_c \ln P_{ct}
+\end{equation}
+\hspace*{2em}这一操作的目的是把历史销量中由价格波动引起的那部分变动去掉，剩下由季节、星期、市场环境等非价格因素驱动的真实需求水平。对未来这个潜在需求做预测后，对于任意候选售价 $p$，实际需求可以通过弹性系数还原回来：
+\begin{equation}
+    \hat{D}_{ct}(p) = \Big[\exp\big\{\hat{A}_{ct} + \tilde{\theta}_c \ln p\big\} - 1\Big]_+
+\end{equation}
+\hspace*{2em}预测时只使用决策日之前就能确定的信息（星期、月份、历史滞后数据等），不使用前一天的实际销量作为输入，避免用未来的信息预测未来。
+
+\hspace*{2em}第一问已证实六品类销量之间存在正相关——市场整体向好时各品类一起好、市场低迷时一起差。若每个品类独立生成需求情景，会人为削弱这种联动效应，导致在糟糕日子里低估多个品类同时滞销的风险。为保留品类间的真实相关性，模型将六个品类的需求预测残差与六个品类的成本预测残差按日期拼接成一个 12 维向量，截断极端值后进行中心化处理：
+\begin{equation}
+    \mathbf{r}_t = \big(e_{1t}^{D},\ldots,e_{6t}^{D},\ e_{1t}^{W},\ldots,e_{6t}^{W}\big)^{\top}
+\end{equation}
+\hspace*{2em}然后从历史数据中所有连续的 7 天时间段里随机抽取 600 个（允许重复），每个 7 天时间段产生一组未来一周的联合残差。将抽取的残差加回到对应的需求预测基线 $\hat{D}_{ct}$ 上，得到第 $\omega$ 组情景下的实际需求：
+\begin{equation}
+    D_{ct}^{(\omega)} = \hat{D}_{ct} \cdot \exp\big(e_{ct}^{(\omega)}\big).
+\end{equation}
+\hspace*{2em}这样生成的情景同时保留了三个层面的相关性：品类之间的联动效应、成本与需求之间的相关性、以及一周内连续几天之间的时间连续性。
+
+
+
+
+\item \textbf{建立补货—定价联合优化模型}
+
+\hspace*{2em}有了各情景下的需求预测和成本预测，最后一步是确定每天每个品类的补货量 $q_{ct}$ 和定价 $p_{ct}$。但这里面临一个问题：若只追求平均利润最大，模型可能会选出''大部分情景下赚钱但偶尔大幅亏损''的方案。在蔬菜经营中，连续亏损会迅速侵蚀现金流，导致后续连进货都困难。因此优化目标不能只看平均赚多少，还要看最坏情况下能保住多少。
+
+\hspace*{2em}每天每个品类的补货量 $q_{ct}$ 在凌晨确定后，由于损耗率 $\lambda_c$ 的存在，实际可售数量为 $(1-\lambda_c)q_{ct}$。实际销量取需求与可售量中的较小值：
+\begin{equation}
+    S_{ct}^{(\omega)} = \min\big\{D_{ct}^{(\omega)}(p_{ct}),\ (1-\lambda_c)q_{ct}\big\}
+\end{equation}
+\hspace*{2em}单组情景下的总利润为各品类各天的销售收入减去进货总成本：
+\begin{equation}
+    \Pi^{(\omega)} = \sum_t\sum_c\Big[p_{ct} S_{ct}^{(\omega)} - W_{ct}^{(\omega)} q_{ct}\Big]
+\end{equation}
+\hspace*{2em}设 $g_{ct} = \big[D_{ct}^{(\omega)}(p_{ct}) - S_{ct}^{(\omega)}\big]_+$ 为第 $c$ 品类第 $t$ 日的缺货量，则修正后的服务调整利润为
+\begin{equation}
+    \Pi_{svc} = \Pi_{op} - \eta \sum_t \sum_c\, g_{ct} \cdot \big[p_{ct} - W_{ct}^{(\omega)}\big]_+,
+\end{equation}
+\hspace*{2em}其中 $\eta$ 为单位缺货量造成的商誉损失系数。缺货量乘以单品毛利 $[p_{ct} - W_{ct}^{(\omega)}]_+$，是因为只有盈利商品缺货才会造成直接的利润损失和顾客流失。
+
+\hspace*{2em}模型不只看利润的平均水平，还要控制最差情况下的收益。具体做法是：把 600 个情景下的利润从小到大排序，取最差的 10\% 情景的平均值（称为下尾条件风险值，记作 LCVaR）：
+\begin{equation}
+    \mathrm{LCVaR}_{\beta}(\Pi) = \max_{\eta}\Big\{\eta - \frac{1}{\beta\Omega}\sum_{\omega}\big(\eta - \Pi^{(\omega)}\big)_+\Big\}
+\end{equation}
+\hspace*{2em}这个值的含义是：在最坏的 10\% 情况中，平均能赚多少钱。值越高说明最坏情况下的收益越有保障。
+
+\hspace*{2em}最终优化目标是在平均利润和下尾利润之间取得平衡：
+\begin{equation}
+    \max\ J = (1-\gamma)\,\mathbb{E}\big[\Pi_{svc}\big] + \gamma\,\mathrm{LCVaR}_{0.10}\big(\Pi_{svc}\big)
+    - \lambda_{ref}\sum_t\sum_c\big(m_{ct} - m_c^{med}\big)^2
+\end{equation}
+其中 $\gamma$ 控制决策者对下尾安全的重视程度（主方案取 0.25，即平均利润占 75\%、下尾利润占 25\%），$\lambda_{ref}$ 是一个惩罚项，用来防止定价偏离历史正常范围太多。加成率的上下界取自最近一年的历史分位数，相邻两天的加成率变化幅度也受到限制，避免价格大幅跳变。补货量同样有非负约束和上限约束：
+\begin{equation}
+    m_c^{L}\leq m_{ct}\leq m_c^{U},\quad \big|m_{ct}-m_{c,t-1}\big|\leq \Delta m_c,\quad 0\leq q_{ct}\leq q_c^{U}
+\end{equation}
+\hspace*{2em}主方案取 $\gamma=0.25$、$\beta=0.10$、$\lambda_{ref}=80$、商誉系数 $\eta=0.10$；同时求解 $\gamma=0$（纯利润最大化）与 $\gamma=0.50$（偏重安全）作风险对照，并对关键参数作敏感性重优化。
+给出的 2023 年 7 月 1--7 日各品类日补货总量与定价策略如图 \ref{fig:q2_strategy}、图 \ref{fig:q2_similarity} 及表 \ref{tab:q2_strategy} 所示，每日汇总见表 \ref{tab:q2_daily}，一周品类汇总见表 \ref{tab:q2_cat}。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig_q2_daily_replenishment_pricing.png}
 \caption{未来一周品类级补货与定价策略}
 \label{fig:q2_strategy}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{fig_q2_similarity.png}
+\includegraphics[width=0.85\textwidth]{figures/fig_q2_strategy_heatmaps.png}
 \caption{补货与定价策略的日期间相似性}
 \label{fig:q2_similarity}
 \end{figure}
 
-\begin{longtable}{@{}ccccccc@{}}
-\caption{2023 年 7 月 1--7 日各品类日补货总量与定价策略} \label{tab:q2_strategy}\\
+{\small
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X}
 \toprule
 日期 & 品类 & 成本/元 & 加成率 & 售价/元 & 补货/kg & 利润/元 \\
 \midrule
-\endfirsthead
-\toprule
-日期 & 品类 & 成本/元 & 加成率 & 售价/元 & 补货/kg & 利润/元 \\
-\midrule
-\endhead
-\bottomrule
-\endlastfoot
-07-01 & 水生根茎类 & 11.64 & 64.2\% & 19.11 & 12.85 & 35.67 \\
+07-01 & 水生根茎 & 11.64 & 64.2\% & 19.11 & 12.85 & 35.67 \\
 07-01 & 花叶类 & 3.41 & 88.8\% & 6.44 & 156.64 & 305.64 \\
 07-01 & 花菜类 & 8.67 & 74.6\% & 15.14 & 13.69 & 47.51 \\
 07-01 & 茄类 & 4.66 & 86.5\% & 8.69 & 27.86 & 63.95 \\
 07-01 & 辣椒类 & 3.36 & 101.1\% & 6.76 & 101.01 & 209.72 \\
 07-01 & 食用菌 & 3.65 & 69.2\% & 6.18 & 50.21 & 88.06 \\
-07-02 & 水生根茎类 & 12.69 & 65.5\% & 21.00 & 9.41 & 30.60 \\
+07-02 & 水生根茎 & 12.69 & 65.5\% & 21.00 & 9.41 & 30.60 \\
 07-02 & 花叶类 & 3.43 & 100.4\% & 6.87 & 121.94 & 267.88 \\
 07-02 & 花菜类 & 8.10 & 89.0\% & 15.31 & 13.60 & 54.32 \\
 07-02 & 茄类 & 4.28 & 92.2\% & 8.23 & 23.33 & 53.05 \\
 07-02 & 辣椒类 & 3.15 & 127.7\% & 7.18 & 76.67 & 193.65 \\
 07-02 & 食用菌 & 3.69 & 70.9\% & 6.30 & 36.09 & 67.32 \\
-07-03 & 水生根茎类 & 12.49 & 65.5\% & 20.66 & 7.53 & 23.26 \\
+07-03 & 水生根茎 & 12.49 & 65.5\% & 20.66 & 7.53 & 23.26 \\
 07-03 & 花叶类 & 3.46 & 100.4\% & 6.94 & 91.34 & 204.72 \\
 07-03 & 花菜类 & 7.89 & 81.5\% & 14.32 & 10.82 & 39.58 \\
 07-03 & 茄类 & 4.09 & 92.2\% & 7.85 & 19.32 & 43.30 \\
 07-03 & 辣椒类 & 3.23 & 132.6\% & 7.50 & 75.75 & 209.62 \\
 07-03 & 食用菌 & 3.47 & 70.9\% & 5.93 & 37.20 & 64.97 \\
-07-04 & 水生根茎类 & 12.84 & 65.5\% & 21.25 & 8.06 & 25.36 \\
+07-04 & 水生根茎 & 12.84 & 65.5\% & 21.25 & 8.06 & 25.36 \\
 07-04 & 花叶类 & 3.42 & 100.4\% & 6.86 & 124.92 & 278.30 \\
 07-04 & 花菜类 & 7.77 & 87.1\% & 14.54 & 13.44 & 53.26 \\
 07-04 & 茄类 & 4.71 & 75.9\% & 8.28 & 7.23 & 15.48 \\
 07-04 & 辣椒类 & 3.47 & 132.6\% & 8.06 & 69.89 & 204.32 \\
 07-04 & 食用菌 & 3.46 & 70.9\% & 5.91 & 35.06 & 59.92 \\
-07-05 & 水生根茎类 & 11.93 & 65.5\% & 19.74 & 7.14 & 21.69 \\
+07-05 & 水生根茎 & 11.93 & 65.5\% & 19.74 & 7.14 & 21.69 \\
 07-05 & 花叶类 & 3.49 & 100.4\% & 7.00 & 127.32 & 285.47 \\
 07-05 & 花菜类 & 7.83 & 88.0\% & 14.72 & 13.99 & 53.06 \\
 07-05 & 茄类 & 4.73 & 89.6\% & 8.96 & 14.42 & 35.81 \\
 07-05 & 辣椒类 & 3.40 & 132.6\% & 7.90 & 70.61 & 196.38 \\
 07-05 & 食用菌 & 3.21 & 70.9\% & 5.49 & 48.70 & 74.76 \\
-07-06 & 水生根茎类 & 12.00 & 65.5\% & 19.85 & 11.21 & 34.73 \\
+07-06 & 水生根茎 & 12.00 & 65.5\% & 19.85 & 11.21 & 34.73 \\
 07-06 & 花叶类 & 3.35 & 100.4\% & 6.72 & 138.03 & 289.61 \\
 07-06 & 花菜类 & 8.04 & 91.9\% & 15.44 & 19.39 & 81.99 \\
 07-06 & 茄类 & 4.52 & 81.6\% & 8.21 & 10.57 & 23.64 \\
 07-06 & 辣椒类 & 3.64 & 132.6\% & 8.47 & 86.38 & 266.91 \\
 07-06 & 食用菌 & 3.22 & 70.9\% & 5.50 & 44.68 & 70.34 \\
-07-07 & 水生根茎类 & 11.69 & 65.5\% & 19.35 & 9.70 & 26.15 \\
+07-07 & 水生根茎 & 11.69 & 65.5\% & 19.35 & 9.70 & 26.15 \\
 07-07 & 花叶类 & 3.16 & 100.4\% & 6.33 & 139.85 & 276.71 \\
 07-07 & 花菜类 & 7.87 & 91.9\% & 15.10 & 21.70 & 91.02 \\
 07-07 & 茄类 & 4.66 & 92.2\% & 8.96 & 21.19 & 57.58 \\
 07-07 & 辣椒类 & 3.72 & 132.6\% & 8.65 & 79.45 & 248.22 \\
 07-07 & 食用菌 & 4.00 & 70.9\% & 6.84 & 40.13 & 76.77 \\
-\end{longtable}
-
+\bottomrule
+\end{tabularx}
+\caption{2023 年 7 月 1--7 日各品类日补货总量与定价策略} \label{tab:q2_strategy}
+\end{table}
+}
 \begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X}
@@ -577,15 +821,24 @@ $q_{ct}$ 为损耗前进货量，损耗率 $\lambda_c$ 下的可供销售量为 
 \label{tab:q2_cat}
 \end{table}
 
-由图 \ref{fig:q2_strategy} 与表 \ref{tab:q2_cat}：花叶类和辣椒类构成主要补货规模与利润来源，这与二者在第一问中表现出的高销量与高稳定性一致；水生根茎类因价格响应最强（弹性约 -1.69）、单位成本较高，模型选择较高的加成率（65\%）与较小的补货量来控制库存风险——这正是价格敏感度驱动的定价行为。对比补货量与售价的日间波动，建议售价的跨日变化更平缓（图 \ref{fig:q2_similarity} 中补货结构日期间相关 0.96--1.00、定价结构 0.99--1.00），说明模型主要通过数量端吸收短期需求波动，并通过参考加价正则与跨日平滑约束控制价格跳变——这与商超日常经营中"价格调整滞后于采购调整"的经验一致。主方案一周补货 2048.33 kg、经营利润期望 4850.30 元。
+\hspace*{2em}由图 \ref{fig:q2_strategy} 与表 \ref{tab:q2_cat}：花叶类和辣椒类构成主要补货规模与利润来源，这与第一问中这两类销量大、销售稳定的特点一致；水生根茎类因价格弹性最大（约 $-1.69$）、单斤成本较高，模型采取了高加价、小批量的策略——价格定高以保障单斤利润空间，进货量控制较小以避免滞销损耗。对比补货量与售价的日间波动幅度，售价的跨日变化远小于补货量（图 \ref{fig:q2_similarity} 中补货结构日期间相关 0.96--1.00、定价结构 0.99--1.00），说明模型主要通过调整进货数量来应对每日需求波动，而售价保持相对稳定——这符合商超经营中价格不轻易变动、采购量随预估调整的实际操作。主方案一周补货 2048.33 kg、经营利润期望 4850.30 元。
 
-\subsubsection{收益与风险比较}
+\item \textbf{决策变量与数据口径}
 
-主方案相对历史中位基线的收益改善如图 \ref{fig:q2_improvement} 所示，不同风险权重下的期望与下尾表现见表 \ref{tab:q2_risk} 及图 \ref{fig:q2_tradeoff}。
+\hspace*{2em}设品类集合 $\mathcal{C}=\{$水生根茎类、花叶类、花菜类、茄类、辣椒类、食用菌$\}$，决策日集合 $\mathcal{T}=\{2023\text{-}07\text{-}01,\ldots,07\text{-}07\}$。决策变量为各日各品类的损耗前补货量 $q_{ct}$ 与成本加成率 $m_{ct}$，建议售价由预测成本与加成率联合确定：
+\begin{equation}
+    p_{ct} = \hat{W}_{ct}\big(1+m_{ct}\big),\qquad c\in\mathcal{C},\ t\in\mathcal{T}
+\end{equation}
+
+历史销量 $Q_{ct}$ 取品类日毛销售量，售价 $P_{ct}$ 取销量加权均价，批发成本 $W_{ct}$ 取当日已售单品批发价的销量加权均值（因附件不含真实采购批次，仅作成本代理），近期损耗率 $\lambda_c$ 取最近 30 天的销量加权值。
+
+\item \textbf{收益与风险比较}
+
+\hspace*{2em}主方案相对历史中位基线的收益改善如图 \ref{fig:q2_improvement} 所示，不同风险权重下的期望与下尾表现见表 \ref{tab:q2_risk} 及图 \ref{fig:q2_tradeoff}。
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{fig_q2_improvement.png}
+\includegraphics[width=0.85\textwidth]{figures/fig_q2_profit_dumbbell.png}
 \caption{主策略相对历史基线的收益改善}
 \label{fig:q2_improvement}
 \end{figure}
@@ -607,397 +860,89 @@ $q_{ct}$ 为损耗前进货量，损耗率 $\lambda_c$ 下的可供销售量为 
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{fig_q2_tradeoff.png}
+\includegraphics[width=0.85\textwidth]{figures/fig_q2_risk_return_tradeoff.png}
 \caption{不同风险权重下的期望—下尾权衡}
 \label{fig:q2_tradeoff}
 \end{figure}
 
-由图 \ref{fig:q2_improvement}：主方案在四项同口径指标上均优于历史基线，周经营利润期望由约 2671 元提高至 4850 元，最差 10\% 经营利润均值由负转正。这说明均值—CVaR 双目标在提升期望收益的同时，有效改善了尾部安全。由表 \ref{tab:q2_risk} 与图 \ref{fig:q2_tradeoff}：$\gamma$ 从 0 增至 0.50 时，正则化下尾利润由 205 元提升至 414 元，而正则化期望利润仅由 4185 元降至 4098 元，边际代价递减；主方案 $\gamma=0.25$ 位于拐点附近，以较小的期望损失换取了明显的尾部改善，继续提高风险权重的边际代价增大，故作为兼顾收益与风险的主参数。
+\hspace*{2em}由图 \ref{fig:q2_improvement}：主方案在四项指标上均优于历史基线，周经营利润期望由约 2671 元提高至 4850 元，最差 10\% 经营利润均值由负转正。这说明平均利润与最差情况安全兼顾的双目标设计是有效的。由表 \ref{tab:q2_risk} 与图 \ref{fig:q2_tradeoff}：当安全权重 $\gamma$ 从 0 提高到 0.50 时，最差 10\% 利润从 205 元提升到 414 元，而平均利润仅从 4185 元降到 4098 元；主方案 $\gamma=0.25$ 处于收益与安全的平衡点——继续提高安全权重虽然还能改善最坏情况，但平均利润的损失会越来越大，性价比下降。
 
-\subsubsection{关键参数敏感性}
+\item \textbf{关键参数敏感性分析验证}
 
-商誉成本系数与参考加价正则权重的敏感性如图 \ref{fig:q2_sensitivity} 所示。
+\hspace*{2em}商誉成本系数与参考加价正则权重的敏感性如图 \ref{fig:q2_sensitivity} 所示。
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{fig_q2_sensitivity.png}
+\includegraphics[width=0.85\textwidth]{figures/fig_q2_management_sensitivity.png}
 \caption{关键管理参数敏感性分析}
 \label{fig:q2_sensitivity}
 \end{figure}
 
-由图 \ref{fig:q2_sensitivity}：商誉成本系数从 0 增至 0.20 时，周补货量由约 1938 kg 增至 2109 kg、平均缺货概率由 66.3\% 降至 57.9\%，说明服务损失惩罚能有效推动提高供给保障；参考加价正则权重从 0 增至 500 时，平均加成率由约 0.90 降至 0.72、触及加价上界的决策数由 35 条降至 0，说明该参数能抑制极端定价。主方案取商誉系数 0.10、正则权重 80，在服务保障与价格稳定之间保持平衡。
+\hspace*{2em}由图 \ref{fig:q2_sensitivity}：商誉成本系数从 0 增至 0.20 时，周补货量由约 1938 kg 增至 2109 kg、平均缺货概率由 66.3\% 降至 57.9\%，说明把缺货带来的顾客流失量化为成本后，模型会主动多进货来减少缺货；参考加价正则权重从 0 增至 500 时，平均加成率由约 0.90 降至 0.72、触及加价上界的决策数由 35 条降至 0，说明该参数能有效抑制定价偏离正常范围。主方案取商誉系数 0.10、正则权重 80，在服务保障与价格稳定之间保持平衡。
 
-\subsection{模型检验}
-
-\textbf{时间外推。} 采用五折递增式时间验证而非随机划分，每折训练集严格早于测试集；未来一周特征最小滞后 7 日，未使用未来信息。需求加权 WAPE 35.88\% 低于季节朴素基准 39.85\%，成本 WAPE 15.28\% 低于基准。
-
-\textbf{弹性稳健性。} 7 日移动块 Bootstrap 表明仅水生根茎类与花菜类区间整体小于 0，其余品类区间跨 0；模型据此启动不同强度的收缩与价格护栏，未把不显著系数删除或强行解释。
-
-\textbf{场景分布。} 场景池含 865 个共同残差日与 859 个连续 7 日块；600 个抽样场景与历史 12 维相关矩阵最大绝对差 0.069$<$0.10，较好保留品类共振。
-
-\textbf{收敛与可行性。} 最终方案由周级 SLSQP 收敛，主方案双初值目标相对差 1.68e-08，边界违反量为 0，36 项结果检查全部通过。
-
-\subsection{模型评价}
-
-\textbf{优点。}（1）模型结构与决策时点一致，售价通过 $p=\hat{W}(1+m)$ 直接对应成本加成定价，决策者可在已知批发成本后快速得到建议售价；（2）复杂模型是否采用由数据决定，GBDT 仅在时间外验证确有增益时进入预测，其余情形回退至简洁的季节朴素基准；（3）第一问的品类间正相关结论通过共同日期 12 维残差场景真正进入第二问的随机优化，而非停留在背景描述中；（4）价格识别失败被显式管理，弱识别品类执行合并回退并收紧加价上界，未将不显著系数强行解释为因果弹性；（5）收益—风险权衡可量化且可复算，参数敏感性分析为决策者提供了管理层面的调节工具。
-
-\textbf{缺点与改进。} 销售量是删失后的需求代理，缺货会使需求被低估；品类成本为已售结构加权代理，茄类、辣椒类价格弹性因果识别仍有限；主方案平均场景缺货概率 61.1\%，若经营上要求更高满足率，需新增缺货惩罚或满足率约束；一周场景外推依赖历史稳定性，无法覆盖历史未出现的极端情形。落地时应每日以最新成本与库存信息滚动更新，茄类与辣椒类优先执行保守护栏并开展小范围价格试验。
-
-
-\section{第三问：销售空间约束下的单品补货与定价联合优化}
-
-\subsection{问题重述与建模思路}
-
-本题要求将第二问的品类级决策进一步落实到可执行的单品级方案。商超必须以 2023 年 6 月 24 日至 6 月 30 日实际出现过正向零售销量的商品作为 7 月 1 日的候选集合，在有限陈列空间下保留 27 至 33 个单品，并保证每个被选单品的订购量不低于 2.5 kg。模型既要尽可能覆盖六个蔬菜品类的市场需求，又要决定每个单品的售价和订货量，使整体收益尽可能高。这里的关键不是单纯追求利润，而是在''品类需求优先得到满足''的前提下优化收益，因此目标具有清晰的优先级结构。
-
-解决本问题首先遇到一个分解问题：第二问给出的是品类级总需求，第三问需要把品类需求分配到具体的单品。单品层面的历史样本比品类层面稀疏得多，直接以最近一周的销量占比外推容易过拟合，完全采用三年平均又会忽略 7 月 1 日前的最新经营状态。需要在近期销量、历史可比星期六结构和单品样本量之间建立动态收缩机制，并保留单品份额的不确定性。
-
-分解出单品需求之后，还需要同时决定选哪些单品、每个单品卖什么价、订多少货。这三个决策相互耦合——价格影响销量、销量影响补货量、补货总量受第二问上限约束。题目中的''在尽量满足市场需求的前提下''说明服务水平具有高于利润的优先级，因此优化目标不能把缺货和利润任意加权，而应采用两阶段词典序结构：第一阶段优先降低六品类等权的标准化缺货率，第二阶段在服务水平基本不下降的条件下优化期望利润与尾部利润。
-
-估计和优化都基于情景进行，但情景数量众多会超出整数规划的求解能力。需要在完整情景和代表情景之间做分层压缩，同时保证最终方案在完整评价中仍然有效。此外，模型结论不能只依赖一组参数或少量场景，需要通过基线比较、分折稳定性和参数重求解来验证。
-
-\subsection{问题分析}
-
-\subsubsection{总体分析}
-
-本问采用''数据驱动的需求分解 + 场景生成 + 词典序多目标优化 + 外部场景检验''的总体路线。先从原始销售记录中识别真实候选单品，再复用第二问已经得到的 7 月 1 日六品类需求、价格弹性、成本残差及跨品类相关场景；随后用经验贝叶斯方法把品类需求分配到单品，并以历史加价率构造有限价格方案；最后建立场景型混合整数线性规划（MILP），在满足商品数、最低陈列量、损耗和采购总量等硬约束后，先优化需求满足程度，再优化利润与尾部风险。模型在 60 个代表场景上求解，在完整 600 个联合场景上评价，以兼顾计算效率和精度。
-
-整体流程为：原始附件与前两问输出 $\to$ 候选单品识别 $\to$ 成本、损耗与价格网格构造 $\to$ 动态单品份额估计 $\to$ 生成 600 个联合需求/成本场景 $\to$ 分层选取 60 个代表场景 $\to$ 第一阶段最小化标准化缺货 $\to$ 第二阶段最大化风险调整利润 $\to$ 在完整场景中回代评价 $\to$ 基线比较、分折检验与灵敏度重求解 $\to$ 输出 7 月 1 日单品清单。
-
-\subsubsection{问题 3-1 分析：单品需求分解}
-
-关键矛盾点是''品类预测相对稳定''与''单品历史样本稀疏''之间的不一致。第二问已经在品类层面形成了 7 月 1 日需求情景，如果第三问重新独立预测 49 个单品，不仅参数数量大幅增加，还会破坏两问的总量一致性。因此，本问不重复建立 49 个弱预测器，而是先确定单品在所属品类中的结构份额，再把品类需求分解到单品。
-
-具体框架分五步。第一步计算最近 7 日各候选单品销量，刻画目标日前的短期经营状态；第二步选取过去三年中与 7 月 1 日同为星期六、且不包含最近 7 日的信息，计算长期可比日份额；第三步通过目标日前滚动星期六验证选择各品类收缩强度，将近期销量与长期份额合成为经验贝叶斯份额；第四步对历史可比日进行整日自助抽样，并将抽样份额与后验份额混合，从而得到 600 组单品份额场景；第五步叠加第二问的品类需求场景和价格弹性，得到各单品-价格方案在每个场景下的潜在需求。
-
-这里使用整日抽样而不是逐单品独立抽样，是为了保留同一品类内部份额''和为 1''的组成约束，也避免生成多个单品同时异常高需求的不现实场景。对于样本丰富的单品，近期信息获得较高影响；对于近期销量少的单品，估计值自动向同品类长期结构收缩，从而降低极端份额对组合决策的误导。
-
-\subsubsection{问题 3-2 分析：选品、定价和补货联合优化}
-
-关键矛盾点是服务水平与利润之间存在冲突。若只最大化期望利润，模型可能集中选择高毛利、低销量单品而忽略部分品类需求；若只最大化销量或满足率，又可能通过低价和高订货形成高损耗、低收益方案。题目中的''在尽量满足市场需求的前提下''说明服务水平具有高于利润的优先级，因此不宜采用任意加权的''利润减 100 倍缺货''形式，而应采用两阶段词典序优化。
-
-第一阶段在给定单品数下最小化六品类等权的标准化缺货率，使大体量品类不会完全支配小体量品类。第二阶段把第一阶段最优缺货率加一个场景标准误作为可接受上限，在该服务水平邻域内最大化 75\% 期望利润与 25\% 最差 10\% 平均利润的组合。这样既忠实体现题意优先级，又避免为利润和缺货率人为指定同量纲权重。
-
-核心步骤为：对每个候选单品设置是否入选变量；对每个入选单品从历史加价率分位点中选择一个价格；设置订货量并由 2.5 kg 下界和数据尺度化上界约束；在每个场景中设置销量，保证其不超过价格响应需求和损耗后的库存；汇总六品类的未满足需求；分别对 $K=27,28,\ldots,33$ 求解并比较完整场景表现，最终选择服务水平最优且风险调整利润更优的规模。
-
-\subsubsection{问题 3-3 分析：模型检验与灵敏度}
-
-关键矛盾点是场景型优化可能产生''场景内表现好、场景外表现差''的过拟合。为控制求解规模，MILP 仅使用 60 个代表场景，但最终方案必须经受完整 600 场景检验。首先计算代表场景与完整场景的服务损失差，并以 0.03 为泛化阈值；其次把 600 个场景分为 6 折，观察满足率的均值、标准差和极值；再次与''近期销量前 33 名 + 中位价格 + 近期日均订货''的透明基线比较；最后分别扰动风险权重、价格弹性、历史份额权重和 Q2 补货上限，每次都重新求解而不是固定策略事后打分。
-
-\subsection{模型假设}
-
-\begin{enumerate}
-\item 候选商品集合由规定窗口内的正向零售销量唯一确定。将 2023 年 6 月 24 日至 6 月 30 日至少出现一次正向零售销量的单品视为 7 月 1 日可售候选，不把只有批发价记录而无零售销售的商品纳入候选。该假设消除了伪候选，使选品范围与题意严格一致，同时把整数变量规模限制在 49 个单品。
-
-\item 7 月 1 日的品类需求、价格弹性与成本扰动沿用第二问结果。第三问不重新估计品类总需求和品类价格弹性，而复用第二问 7 月 1 日的联合需求-成本场景；单品价格响应采用所属品类弹性。该假设实现了跨问数据闭环，降低参数估计方差，并使第三问成为第二问品类采购计划的可执行分解。
-
-\item 单品份额在可比星期六附近具有可迁移性，但存在随机波动。目标日前最近一周反映短期状态，过去三年的可比星期六反映稳定结构；二者经经验贝叶斯收缩后可用于估计 7 月 1 日份额，并用可比日自助抽样表示随机性。收缩可避免小样本单品出现不合理的极端份额，自助抽样则保留了历史日间波动。
-
-\item 当日销售不发生跨日库存转移，损耗在可售库存约束中一次性体现。7 月 1 日的订货按附件 4 的近期损耗率折算为可售库存，未售部分不计入次日残值，也不建立跨日库存状态。该假设把多周期易腐库存问题转化为单日线性库存约束。
-
-\item 第一问关联关系只作诊断，不强制进入主目标。不对第一问识别的替代或关联单品设置硬性排斥/搭配约束，也不在利润中加入主观关联惩罚。49 个候选中只有 26 个被第一问单品聚类覆盖，可靠关联对数量有限，强行惩罚会使未覆盖单品受到结构性不公平。
 \end{enumerate}
 
-\subsection{符号说明}
+\subsection{问题三的模型建立与求解}
+\subsubsection{问题三的数据预处理}
 
-\begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X}
-\toprule
-符号 & 含义 & 单位 \\
-\midrule
-$I$ & 由 6 月 24--30 日正销量识别的候选单品集合 & --- \\
-$C$ & 六个蔬菜品类集合 & --- \\
-$K_i$ & 单品 $i$ 的可选离散价格方案集合 & --- \\
-$\Omega$ & 需求与成本联合场景集合 & --- \\
-$c(i)$ & 单品 $i$ 所属品类 & --- \\
-$x_i$ & 单品 $i$ 是否被选中，选中为 1 & --- \\
-$y_{ik}$ & 单品 $i$ 是否采用第 $k$ 个价格方案 & --- \\
-$q_i$ & 单品 $i$ 的订货量 & kg \\
-$p_{ik}$ & 单品 $i$ 在价格方案 $k$ 下的零售价 & 元/kg \\
-$p_i^{\mathrm{ref}}$ & 单品 $i$ 的近期参考售价 & 元/kg \\
-$w_i^{\omega}$ & 场景 $\omega$ 下单品 $i$ 的预测批发成本 & 元/kg \\
-$\lambda_i$ & 单品 $i$ 的近期损耗率 & --- \\
-$r_i^{\mathrm{recent}}$ & 单品 $i$ 最近 7 日在所属品类中的销量信息 & --- \\
-$r_i^{\mathrm{long}}$ & 单品 $i$ 在历史可比星期六中的长期份额 & --- \\
-$r_i^{\omega}$ & 场景 $\omega$ 下单品 $i$ 的需求份额 & --- \\
-$\kappa_c$ & 品类 $c$ 的经验贝叶斯收缩强度 & kg \\
-$D_c^{\omega}$ & 场景 $\omega$ 下品类 $c$ 的市场需求 & kg \\
-$\varepsilon_c$ & 品类 $c$ 的价格弹性 & --- \\
-$d_{ik}^{\omega}$ & 场景 $\omega$ 下单品 $i$ 在价格 $k$ 下的潜在需求 & kg \\
-$s_{ik}^{\omega}$ & 场景 $\omega$ 下单品 $i$ 在价格 $k$ 下的实际销量 & kg \\
-$u_c^{\omega}$ & 场景 $\omega$ 下品类 $c$ 的未满足需求 & kg \\
-$\Pi^{\omega}$ & 场景 $\omega$ 下整体利润 & 元 \\
-$L$ & 六品类等权的平均标准化缺货率 & --- \\
-$\alpha$ & 尾部概率，本模型取 0.10 & --- \\
-$\gamma$ & 尾部风险权重，本模型取 0.25 & --- \\
-$Q^{\mathrm{Q2}}$ & 第二问 7 月 1 日总补货量上限 & kg \\
-\end{tabularx}
-\caption{第三问符号说明}
-\label{tab:q3_symbols}
-\end{table}
 
-\subsection{模型构建}
+\subsection{问题四的模型建立与求解}
+\subsubsection{问题四的数据预处理}
 
-\subsubsection{候选集合与数据口径}
+\subsection{模型的优点}
 
-对日粒度单品销售表进行日期筛选，仅保留 2023 年 6 月 24 日至 6 月 30 日且毛销售量大于 0 的记录，按单品编码去重后得到候选集合 $I$。该口径得到 49 个候选单品，覆盖六个品类。损耗率采用近期销售量加权值，参考价格采用该周销售收入与销量之比；最新批发价取候选周内该单品最后一个非空批发价。
+\subsection{模型的缺点}
 
-为了与第二问成本预测保持一致，先计算候选周各品类的销量加权批发成本，再以第二问 7 月 1 日品类成本预测相对该近期成本的比例，调整各单品最新批发价：
-\begin{equation}
-    \hat{w}_i = w_{i,\mathrm{latest}} \times \frac{\hat{w}_{c(i),\mathrm{Q2}}}{\bar{w}_{c(i),\mathrm{recent}}}
-\end{equation}
-该比例缩放既保留了同品类单品之间的成本差异，又使单品成本整体变化方向与第二问一致。场景成本进一步叠加第二问成本残差：
-\begin{equation}
-    w_i^{\omega} = \hat{w}_i \times \exp\bigl(e_{c(i)}^{\omega}\bigr)
-\end{equation}
+%参考文献
 
-\subsubsection{动态单品份额与经验贝叶斯收缩}
+\begin{thebibliography}{9}
 
-对品类 $c$ 内的单品 $i$，记最近 7 日销量为 $Q_i^{\mathrm{recent}}$，品类最近 7 日总销量为 $Q_c^{\mathrm{recent}}$，历史可比星期六长期份额为 $r_i^{\mathrm{long}}$。构造经验贝叶斯份额：
-\begin{equation}
-    \hat{r}_i = \frac{Q_i^{\mathrm{recent}} + \kappa_c r_i^{\mathrm{long}}}{Q_c^{\mathrm{recent}} + \kappa_c},\qquad \sum_{i:c(i)=c}\hat{r}_i = 1
-\end{equation}
-式（3）可解释为在近期观测上加入 $\kappa_c$ kg 的长期先验''伪样本''。当近期样本充分时，$Q_c^{\mathrm{recent}}$ 远大于 $\kappa_c$，份额主要由最近一周决定；当近期样本有限时，估计值向长期可比日结构收缩。$\kappa_c$ 不主观指定，而是在目标日前的历史星期六上滚动验证，从候选网格中选择预测误差较小的值。
+\bibitem{buzby2015produce}
+Buzby J C, Bentley J T, Padera B, et al.
+Estimated fresh produce shrink and food loss in U.S. supermarkets[J].
+\textit{Agriculture},
+2015, 5(3): 626--648.
 
-为了形成单品份额场景，从过去三年的可比星期六中按整日有放回抽样，计算抽样日内份额 $r_i^{\mathrm{obs},\omega}$，再与后验份额混合：
-\begin{equation}
-    r_i^{\omega} = h \cdot r_i^{\mathrm{obs},\omega} + (1-h) \cdot \hat{r}_i,\qquad h = 0.50
-\end{equation}
-每个场景、每个品类内部重新归一化，确保份额之和严格为 1。该设计保留了同一日各单品份额间的相关变化。
+\bibitem{broekmeulen2019foodwaste}
+Broekmeulen R A C M, van Donselaar K H.
+Quantifying the potential to improve on food waste, freshness and sales for perishables in supermarkets[J].
+\textit{International Journal of Production Economics},
+2019, 209: 265--273.
 
-\subsubsection{价格网格与价格响应需求}
+\bibitem{akaike1974}
+Akaike H.
+A new look at the statistical model identification[J].
+\textit{IEEE Transactions on Automatic Control},
+1974, 19(6): 716--723.
 
-连续定价会使价格响应项产生非线性，也可能给出历史中从未出现过的难执行价格。故对每个单品建立有限价格网格：优先使用该单品近一年实际加价率的 10\%、30\%、50\%、70\%、90\% 销量加权分位点；若有效销售天数少于 30 天或不同价格少于 5 个，则回退到所属品类历史加价率。所有加价率均截断在第二问估计的品类合理边界内，最终价格按 0.1 元/kg 取整。
 
-对单品 $i$ 的价格方案 $k$，复用第二问所属品类价格弹性 $\varepsilon_c$，构造场景需求：
-\begin{equation}
-    d_{ik}^{\omega} = r_i^{\omega} D_{c(i)}^{\omega} \left(\frac{p_{ik}}{p_i^{\mathrm{ref}}}\right)^{\varepsilon_{c(i)}}
-\end{equation}
-由于蔬菜需求通常随价格上升而下降，估计弹性为负时，价格高于参考价会压低需求。式（5）把第二问的品类需求、第三问的单品结构和定价决策连接为统一口径。
+\bibitem{marshall1920}
+Marshall A.
+\textit{Principles of Economics: An Introductory Volume}[M].
+8th ed.
+London: Macmillan, 1920.
 
-\subsubsection{决策变量与硬约束}
+\bibitem{tellis1988}
+Tellis G J.
+The Price Elasticity of Selective Demand: A Meta-Analysis of Econometric Models of Sales[J].
+\textit{Journal of Marketing Research}, 1988, 25(4): 331--341.
+DOI: 10.1177/002224378802500401.
 
-设置二元变量 $x_i$ 表示单品是否入选，$y_{ik}$ 表示是否采用价格 $k$；连续变量 $q_i$ 表示订货量，$s_{ik}^{\omega}$ 表示场景销量，$u_c^{\omega}$ 表示品类未满足需求。
 
-商品数量约束为：
-\begin{equation}
-    27 \leq \sum_{i\in I} x_i \leq 33
-\end{equation}
-实际求解中分别固定 $K=27,\ldots,33$ 枚举，以便获得完整的组合规模前沿。每个单品至多选择一个价格，未入选时不定价：
-\begin{equation}
-    \sum_{k\in K_i} y_{ik} = x_i
-\end{equation}
-最低陈列量与数据尺度化订货上界为：
-\begin{equation}
-    2.5\,x_i \leq q_i \leq M_i x_i
-\end{equation}
-其中 $M_i$ 取各价格方案场景需求 99\% 分位数的 1.2 倍，并除以可售比例 $1-\lambda_i$，且不低于 2.5 kg。
+\end{thebibliography}
 
-第三问是第二问品类计划的单品落实，因此设置总订货量上限：
-\begin{equation}
-    \sum_{i\in I} q_i \leq Q^{\mathrm{Q2}} = 362.2627
-\end{equation}
-场景销量同时受需求和损耗后库存限制：
-\begin{equation}
-    0 \leq s_{ik}^{\omega} \leq d_{ik}^{\omega} y_{ik}
-\end{equation}
-\begin{equation}
-    \sum_{k\in K_i} s_{ik}^{\omega} \leq (1-\lambda_i) q_i
-\end{equation}
-品类未满足需求满足：
-\begin{equation}
-    u_c^{\omega} + \sum_{i:c(i)=c}\sum_{k\in K_i} s_{ik}^{\omega} \geq D_c^{\omega},\qquad u_c^{\omega} \geq 0
-\end{equation}
+\newpage
+%附录
+\begin{appendices}
 
-\subsubsection{第一阶段：最小化品类等权服务损失}
 
-若直接最小化总缺货量，大需求的花叶类和辣椒类会支配目标，小体量品类可能被忽视。为体现题目''各品类需求''，定义六品类等权的平均标准化缺货率：
-\begin{equation}
-    L = \frac{\frac{1}{|\Omega||C|}\sum_{\omega\in\Omega}\sum_{c\in C} u_c^{\omega}}{\max\bigl(D_c^{\omega},\,10^{-9}\bigr)}
-\end{equation}
-第一阶段求解：
-\begin{equation}
-    L^* = \min L,\quad \mathrm{s.t.\ 约束}\ (6)-(12)
-\end{equation}
-该目标的补量是平均需求满足率 $1-L$，具有直观解释。
+\section{算法--matlab 源程序}
+\begin{lstlisting}[caption={问题预处理}]
+clc
+clear
+T = readtable("附件.xlsx");
 
-\subsubsection{第二阶段：在服务容差内优化风险调整利润}
-
-场景利润为销售收入减去订货成本，成本按损耗前订货量计：
-\begin{equation}
-    \Pi^{\omega} = \sum_i\sum_k p_{ik} s_{ik}^{\omega} - \sum_i w_i^{\omega} q_i
-\end{equation}
-第一阶段使用有限代表场景，若强制第二阶段严格等于 $L^*$，可能因微小场景噪声排除大量利润更优方案。故计算第一阶段各场景服务损失的标准误 $\delta$，并增加约束：
-\begin{equation}
-    L \leq L^* + \delta
-\end{equation}
-为避免只优化均值掩盖极端亏损，引入最差 $\alpha=10\%$ 场景平均利润 $\mathrm{LTM}_{\alpha}$。利用辅助变量 $\eta$ 和 $\xi_{\omega}$ 进行线性化：
-\begin{equation}
-    \xi_{\omega} \geq \eta - \Pi^{\omega},\qquad \xi_{\omega} \geq 0
-\end{equation}
-\begin{equation}
-    \mathrm{LTM}_{\alpha}(\Pi) = \eta - \frac{1}{\alpha|\Omega|}\sum_{\omega\in\Omega}\xi_{\omega}
-\end{equation}
-第二阶段目标为：
-\begin{equation}
-    \max\bigl\{(1-\gamma)\,\mathbb{E}[\Pi] + \gamma\,\mathrm{LTM}_{0.10}(\Pi)\bigr\},\qquad \gamma = 0.25
-\end{equation}
-并满足约束（6）-（12）及（16）-（18）。该目标不是把缺货和利润任意相加，而是在服务水平已基本锁定后处理风险-收益权衡，符合题目优先级。
-
-\subsubsection{场景压缩与规模选择}
-
-第二问提供 600 个保留跨品类相关性的联合场景。为控制含场景销量变量的 MILP 规模，按六品类总需求从低到高排序，在等距分位位置选择 60 个代表场景，且保留两端极端场景。对 $K=27,\ldots,33$ 分别执行两阶段优化，再将每个方案放回完整 600 场景计算满足率、期望利润和最差 10\% 平均利润，最终按服务优先原则选取 $K$。
-
-\subsection{求解方法}
-
-模型使用 Python 实现。数据清洗和表连接使用 pandas、NumPy；混合整数线性规划使用 SciPy 的 milp 接口及 HiGHS 求解器；稀疏约束矩阵采用 SciPy sparse 构造。二元变量包括选品变量和价格变量，连续变量包括订货量、场景销量、缺货量及尾部风险辅助变量。
-
-求解器开启 presolve，MILP 相对间隙设为 $1\times10^{-7}$，单阶段时间上限 180 s。对 $K=27$ 至 33 枚举时，每个 $K$ 先求第一阶段服务最优值，再求第二阶段风险调整利润。风险权重改变但需求、补货上限和 $K$ 不变时，可严格复用第一阶段最优值。
-
-\subsection{求解结果与分析}
-
-\subsubsection{题意与可行性审查}
-
-表 \ref{tab:q3_check} 将原题要求与实际输出逐项对应。所有硬约束均通过独立校验。
-
-\begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X}
-\toprule
-原题要求 & 模型实现 & 实际核验 \\
-\midrule
-候选来自 6 月 24--30 日可售品种 & 仅保留该周正向零售销量单品 & 49 个候选，与原始流水集合完全一致 \\
-决策日期为 7 月 1 日 & 全部策略行写入统一决策日 & 33 行均为 2023-07-01 \\
-可售单品 27--33 个 & 枚举 $K=27,\ldots,33$ 并按服务优先选择 & 最终 $K=33$ \\
-每个入选单品不低于 2.5 kg & $2.5x_i \leq q_i \leq M_i x_i$ & 最小订货量恰为 2.5 kg \\
-尽量满足各品类需求 & 第一阶段最小化六品类等权缺货率 & 完整场景平均满足率 77.81\% \\
-在服务前提下收益最大 & 第二阶段优化期望与尾部利润 & 期望利润 163.75 元 \\
-补货与定价均需给出 & 联合决定 $q_i$ 与离散价格 $p_{ik}$ & 33 个单品均有价格和订货量 \\
-\bottomrule
-\end{tabularx}
-\caption{题意与可行性审查}
-\label{tab:q3_check}
-\end{table}
-
-\subsubsection{组合规模前沿}
-
-表 \ref{tab:q3_frontier} 显示 $K$ 从 27 增至 33 时，完整场景需求满足率由 76.93\% 单调升至 77.81\%，期望利润由 62.52 元增至 163.75 元，风险调整利润由 $-81.57$ 元改善为 17.11 元。在给定的 Q2 补货总量约束下，增加单品并没有挤压利润，反而提高了需求覆盖和价格匹配能力，因此最终选取上限 $K=33$ 具有数据依据，并非人为固定。
-
-\begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X}
-\toprule
-$K$ & 需求满足率/\% & 期望利润/元 & 最差10\%平均利润/元 & 风险调整利润/元 & 总订货/kg \\
-\midrule
-27 & 76.93 & 62.52 & $-513.82$ & $-81.57$ & 362.263 \\
-28 & 77.00 & 95.04 & $-487.70$ & $-50.64$ & 362.263 \\
-29 & 77.06 & 110.48 & $-475.46$ & $-36.01$ & 362.263 \\
-30 & 77.37 & 126.92 & $-461.86$ & $-20.27$ & 362.263 \\
-31 & 77.53 & 138.85 & $-448.61$ & $-8.01$ & 362.263 \\
-32 & 77.67 & 149.85 & $-435.68$ & 3.47 & 362.263 \\
-33 & 77.81 & 163.75 & $-422.81$ & 17.11 & 362.263 \\
-\bottomrule
-\end{tabularx}
-\caption{组合规模前沿}
-\label{tab:q3_frontier}
-\end{table}
-
-\subsubsection{最终方案总体结果}
-
-最终方案选择 33 个单品，总订货量为 362.2627 kg，恰好达到第二问 7 月 1 日总补货上限。完整 600 场景平均需求满足率为 77.8079\%，期望利润为 163.75 元，最差 10\% 场景平均利润为 $-422.81$ 元，按 $\gamma=0.25$ 计算的风险调整利润为 17.11 元。
-
-作为透明基线，选择近期销量最高的 33 个单品，采用中位可行价格和近期日均订货量。基线满足率为 64.61\%，期望利润 56.48 元，最差 10\% 平均利润 $-439.76$ 元。主模型相对基线的满足率提高 13.20 个百分点，期望利润增加 107.27 元，尾部利润改善 16.94 元，说明改进不是单纯通过扩大订货量获得：模型同时优化了品类覆盖、单品结构和价格。
-
-\subsubsection{品类层面结果}
-
-\begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X}
-\toprule
-品类 & 候选数 & 入选数 & 期望需求/kg & 期望销量/kg & 满足率/\% & 订货量/kg & 期望利润/元 \\
-\midrule
-水生根茎类 & 7 & 4 & 17.63 & 14.91 & 91.78 & 25.87 & $-66.31$ \\
-花叶类 & 17 & 11 & 195.47 & 85.56 & 55.12 & 116.03 & 158.98 \\
-花菜类 & 2 & 2 & 16.90 & 14.94 & 94.46 & 23.68 & $-32.22$ \\
-茄类 & 5 & 4 & 33.50 & 26.71 & 90.86 & 45.15 & $-9.40$ \\
-辣椒类 & 10 & 6 & 135.22 & 63.55 & 66.26 & 90.94 & 119.87 \\
-食用菌 & 8 & 6 & 71.09 & 37.66 & 68.37 & 60.60 & $-7.16$ \\
-\bottomrule
-\end{tabularx}
-\caption{品类层面结果}
-\label{tab:q3_cat}
-\end{table}
-
-由表 \ref{tab:q3_cat}：水生根茎、花菜和茄类的满足率均超过 90\%，说明较小品类没有被大品类目标吞没；花叶类和辣椒类需求体量大，在总订货上限下仍是主要缺口来源。部分品类期望利润为负并非计算错误，而是服务优先目标的直接结果：模型为维持品类覆盖保留了若干低毛利或高损耗单品。整体利润仍为正，且显著高于基线，体现了词典序目标的经营含义。
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{image7.png}
-\caption{六品类选品、补货、服务与利润概览}
-\label{fig:q3_overview}
-\end{figure}
-
-\subsubsection{深层分析}
-
-模型最值得信赖的改进是相对基线的服务与利润同步提升。满足率增加 13.20 个百分点的同时，期望利润增加 107.27 元，说明联合优化避免了单纯''多订货换服务''或''高价格换利润''的单向策略。
-
-品类之间仍存在明显资源竞争。花叶类需求约占六品类总期望需求的最大部分，但满足率只有 55.12\%；若继续提高花叶类服务，需要压缩其他品类或突破 Q2 总量。模型按六品类等权缺货率而非总缺货千克优化，因而优先保证各品类均有合理覆盖。这与题目''满足各品类需求''的表述更一致，但也意味着总销量并非唯一目标。
-
-尾部风险不能忽略。虽然期望利润为正，最差 10\% 场景平均利润仍为 $-422.81$ 元，说明在高成本、低需求或结构偏移同时出现时，单日策略可能亏损。风险权重从 0 提高至 0.5 后，期望利润从 167.53 元下降至 151.45 元，尾部利润从 $-432.34$ 元改善至 $-421.63$ 元，体现了风险与均值之间的真实交换。
-
-历史单品份额是最关键的数据环节。当历史抽样份额权重由 0.25 增至 0.75 时，满足率从 82.83\% 降至 71.86\%，期望利润从 356.56 元降至 $-51.83$ 元，选品 Jaccard 系数最低为 0.833。这一结果说明品类总需求预测相对稳定，但''需求落到哪些单品''会显著改变补货和利润，应在实际经营中优先补充逐时库存可得性、缺货替代和陈列曝光数据。
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{image8.png}
-\caption{六品类需求覆盖与补货资源分配图}
-\label{fig:q3_resource}
-\end{figure}
-
-\subsection{模型检验}
-
-\textbf{可行性与一致性检验。} 独立输出校验器重新从原始流水识别候选集合，并检查候选唯一性、成本与损耗范围、品类份额和为 1、价格网格来源、$K=27-33$ 前沿、最低订货量、总量上限、销量不超过需求、未售量恒等式、六品类汇总与单品汇总勾稽、利润汇总和敏感性参数范围。共 77 项检查全部通过。另有 17 项单元测试覆盖日期边界、经验贝叶斯收缩、价格回退、损耗口径、MILP 约束、第一阶段复用和缓存失效拒绝，全部通过。
-
-\textbf{代表场景泛化检验。} 优化使用 60 个代表场景，最终在 600 个完整场景上评价。代表场景的第二阶段服务损失为 0.214430，完整场景服务损失为 0.221921，绝对差为 0.007490，即 0.749 个百分点，明显低于预设阈值 0.03。这表明场景压缩没有造成显著的服务水平高估。
-
-\textbf{六折场景稳定性检验。} 将 600 个场景分为 6 折，每折 100 个场景，分别计算固定最终策略的满足率和利润。六折满足率依次为 77.26\%、76.72\%、78.91\%、77.52\%、79.02\% 和 77.41\%，均值 77.81\%，样本标准差 0.009405，低于 0.05 的稳定性阈值；最小与最大满足率仅相差约 2.31 个百分点。六折期望利润标准差为 31.69 元，反映利润对成本与需求联合波动比服务率更敏感，因此模型报告尾部利润是必要的。
-
-\textbf{基线有效性检验。} 与近期销量排序基线相比，主模型的满足率、期望利润和最差 10\% 平均利润三个核心指标均改善。由于基线规则透明、使用相同候选、相同价格可行域和同一 600 场景评价，比较不依赖隐藏的外部数据，能够证明联合优化相对常规经验策略具有实际增益。
-
-\subsection{灵敏度分析}
-
-灵敏度分析采用''改变一个参数并完整重求解''的方式，参数包括风险权重 $\gamma$、价格弹性缩放、历史份额权重 $h$ 和补货上限系数。表 \ref{tab:q3_sens} 汇总 9 个不重复方案。
-
-\begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X}
-\toprule
-方案 & 参数变化 & 满足率/\% & 期望利润/元 & 最差10\%利润/元 & 选品Jaccard \\
-\midrule
-基准 & $\gamma$=0.25，$h$=0.50，上限=1.00 & 77.81 & 163.75 & $-422.81$ & 1.000 \\
-风险权重 0 & $\gamma$=0 & 77.82 & 167.53 & $-432.34$ & 1.000 \\
-风险权重 0.5 & $\gamma$=0.50 & 78.01 & 151.45 & $-421.63$ & 1.000 \\
-弹性 $\times$0.8 & $\varepsilon\times$0.8 & 77.72 & 178.46 & $-411.04$ & 1.000 \\
-弹性 $\times$1.2 & $\varepsilon\times$1.2 & 77.94 & 153.52 & $-432.57$ & 1.000 \\
-历史份额权重 0.25 & $h$=0.25 & 82.83 & 356.56 & $-268.75$ & 0.941 \\
-历史份额权重 0.75 & $h$=0.75 & 71.86 & $-51.83$ & $-599.80$ & 0.833 \\
-补货上限 0.85 & $Q$上限$\times$0.85 & 74.44 & 235.22 & $-264.99$ & 1.000 \\
-补货上限 0.925 & $Q$上限$\times$0.925 & 76.27 & 197.42 & $-345.23$ & 1.000 \\
-\bottomrule
-\end{tabularx}
-\caption{关键参数灵敏度分析}
-\label{tab:q3_sens}
-\end{table}
-
-风险权重和弹性在所设范围内不会改变 33 个单品的选品集合，说明组合结构对这两类参数较稳定；它们主要改变价格与订货量。历史份额权重的扰动同时改变服务、利润和选品，是最敏感因素。补货上限从 100\% 降至 85\% 时，满足率下降 3.37 个百分点，但期望利润反而上升 71.47 元，说明服务优先模型在完整上限下为提高覆盖承担了额外库存和损耗；这正是词典序目标所揭示的服务-利润边界。
-
-所有 9 个方案的最差 10\% 平均利润均为负，范围为 $-599.80$ 至 $-264.99$ 元。因此灵敏度分析的合格结论应表述为：主方案在服务率与选品结构上具有较好稳定性，且明显优于朴素基线；但单品份额结构和极端场景亏损仍是主要风险，实际应用应结合当天到货价与开店后早期销量进行滚动修正。
-
-\subsection{模型评价}
-
-\textbf{优点。}（1）题意与数据口径高度一致。候选集合严格由规定窗口的正销量识别为 49 个单品，最终 33 个单品全部来自该集合，最低订货量为 2.5 kg，总订货量 362.26 kg 与第二问衔接，77 项独立检查全部通过；（2）目标优先级符合实际经营。模型先优化六品类等权服务，再在一个场景标准误容差内优化利润，避免用主观罚系数混合不同量纲。相对透明基线，需求满足率提高 13.20 个百分点，期望利润增加 107.27 元，服务与收益同时改善；（3）能处理需求、成本和单品结构的联合不确定性。模型在 60 个代表场景上优化并用完整 600 场景评价，还报告最差 10\% 平均利润。代表-完整场景服务损失差仅 0.00749，六折满足率标准差仅 0.00940，说明场景压缩具有较好泛化性；（4）复杂度与可执行性平衡良好。定价使用历史加价率形成 0.1 元/kg 精度的有限网格，结果可以直接落地；等价复用和验证式缓存把重复求解时间降至 322.9 s，同时保持场景数、约束和求解间隙不变；（5）创新建立在现有数据可支持的范围内。模型融合经验贝叶斯份额、跨问场景复用、词典序 MILP 和尾部风险，但没有因第一问关联网络覆盖不足而强行加入替代惩罚。
-
-\textbf{缺点与改进。} 单品需求份额仍是主要不确定来源。历史份额权重从 0.25 变到 0.75 时，满足率范围达到 71.86\%--82.83\%，期望利润范围达到 $-51.83$--356.56 元，说明仅靠日汇总销量难以完全识别顾客真实偏好；模型未显式刻画单品间替代和购物篮效应，若发生大面积缺货，模型可能低估需求转移；极端场景仍存在亏损，基准方案最差 10\% 平均利润为 $-422.81$ 元，所有灵敏度方案的尾部利润均为负。实际经营中应在凌晨真实批发价到达后快速重求解，或设置可接受亏损上限进行二次风险约束。
+\end{lstlisting}
+\end{appendices}
 
 \end{document}
