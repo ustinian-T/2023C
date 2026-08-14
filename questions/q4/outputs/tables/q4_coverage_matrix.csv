@@ -1,0 +1,8 @@
+﻿package_id,latent_demand,price_response,dynamic_loss,supply_cost,assortment_substitution,external_demand,realized_validation,competitive_context
+inventory_stockout,1,1,0,0,1,0,1,0
+batch_loss_quality,0,0,1,0,0,0,1,0
+supplier_quote_fulfillment,0,0,0,1,0,0,1,0
+promotion_display_traffic,0,1,0,0,0,1,0,0
+anonymous_basket,0,0,0,0,1,0,0,0
+weather_calendar,0,0,0,0,0,1,0,0
+competitor_price,0,0,0,0,0,0,0,1

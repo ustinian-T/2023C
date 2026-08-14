@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe -NoProfile -Command \"[Environment]::GetEnvironmentVariable\\('Path','Machine'\\)\")",
+      "Bash(powershell.exe -NoProfile -Command \"[Environment]::GetEnvironmentVariable\\('Path','User'\\)\")",
+      "Bash(powershell.exe -NoProfile -Command '$p=[Environment]::GetEnvironmentVariable\\('\\\\''Path'\\\\'','\\\\''Machine'\\\\''\\); Write-Output \\('\\\\''len='\\\\'' + $p.Length\\); Write-Output \\([BitConverter]::ToString\\([Text.Encoding]::Unicode.GetBytes\\($p.Substring\\($p.Length-60\\)\\)\\)\\)')",
+      "Read(//c/Users/ustinian/AppData/Roaming/Code/User/**)",
+      "Bash(grep -iA5 -B2 'latex-workshop\\\\|texlive\\\\|latex')"
+    ]
+  }
+}

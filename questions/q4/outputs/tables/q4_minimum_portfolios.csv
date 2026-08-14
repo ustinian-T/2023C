@@ -1,0 +1,8 @@
+﻿scenario_id,scenario_name,rationale,solution_id,portfolio_size,package_ids,package_names,capability_count,is_feasible,is_deletion_minimal
+base_core,完整核心链路,同时修复需求、价格、损耗、供给、单品替代与决策验证缺口。,1,5,anonymous_basket|batch_loss_quality|inventory_stockout|promotion_display_traffic|supplier_quote_fulfillment,匿名购物篮、批次损耗与品质、库存与缺货、促销陈列与客流、供应商报价与履约,7,True,True
+forecast_strict,强化外部预测,在核心链路上要求独立天气和节假日数据，不允许仅由客流代理外部冲击。,1,6,anonymous_basket|batch_loss_quality|inventory_stockout|promotion_display_traffic|supplier_quote_fulfillment|weather_calendar,匿名购物篮、批次损耗与品质、库存与缺货、促销陈列与客流、供应商报价与履约、天气与日历,8,True,True
+market_strict,强化市场定价背景,在核心链路上增加竞争价格，用于验证相对定价而非替代门店内部价格实验。,1,6,anonymous_basket|batch_loss_quality|competitor_price|inventory_stockout|promotion_display_traffic|supplier_quote_fulfillment,匿名购物篮、批次损耗与品质、竞争价格、库存与缺货、促销陈列与客流、供应商报价与履约,8,True,True
+assortment_light,暂缓替代识别,短期只改进品类补货定价，暂不要求购物篮支持的单品替代建模。,1,4,batch_loss_quality|inventory_stockout|promotion_display_traffic|supplier_quote_fulfillment,批次损耗与品质、库存与缺货、促销陈列与客流、供应商报价与履约,6,True,True
+cost_light,暂缓供应端扩展,已有批发价流程暂时维持，先修复需求、价格、损耗和单品份额。,1,4,anonymous_basket|batch_loss_quality|inventory_stockout|promotion_display_traffic,匿名购物篮、批次损耗与品质、库存与缺货、促销陈列与客流,5,True,True
+loss_light,暂缓批次损耗,先修复需求、价格、供应和选品关系，静态损耗率暂时保留。,1,4,anonymous_basket|inventory_stockout|promotion_display_traffic|supplier_quote_fulfillment,匿名购物篮、库存与缺货、促销陈列与客流、供应商报价与履约,5,True,True
+identification_only,只做需求识别试点,以真实需求、价格响应和单品替代三项统计识别为最小试点边界。,1,3,anonymous_basket|inventory_stockout|promotion_display_traffic,匿名购物篮、库存与缺货、促销陈列与客流,3,True,True

@@ -9,7 +9,7 @@
 | 问题 1 | 销量分布与品类/单品关联关系 | ✅ 已完成（重构：季节画像 + K-means 聚类 + 分层关系分析） | [questions/q1/README.md](questions/q1/README.md) |
 | 问题 2 | 品类级未来一周补货与定价 | ✅ 已完成（半参数弹性 + 集成预测 + 联合场景 + 周级 CVaR 优化） | [questions/q2/README.md](questions/q2/README.md) |
 | 问题 3 | 单品级 7 月 1 日补货与定价 | ✅ 已完成（动态份额 + Q2 场景映射 + 词典序 MILP） | [questions/q3/README.md](questions/q3/README.md) |
-| 问题 4 | 建议补充采集的数据及其作用 | 目录已建立，求解尚未开始 | [questions/q4/README.md](questions/q4/README.md) |
+| 问题 4 | 建议补充采集的数据及其作用 | ✅ 已完成（前三问证据审计 + 最小采集组合 + 结构情景灵敏度） | [questions/q4/README.md](questions/q4/README.md) |
 
 ## 项目结构
 
@@ -73,3 +73,16 @@ python questions\q3\code\validate_q3_outputs.py
 ```
 
 模型严格从 6 月 24-30 日正销量记录得到 49 个候选，并复用第二问的品类弹性、成本预测和 600 个相关场景。最终选 33 个单品，完整场景需求满足率为 77.81%，输出统一写入 `questions/q3/outputs/`。
+
+## 第四问复现
+
+第四问只读取前三问已经验证的结果，不重新拟合前三问：
+
+```powershell
+python questions\q4\code\q4_model.py
+python -m unittest questions.q4.code.test_q4_model -v
+python questions\q4\code\validate_q4_outputs.py
+python questions\q4\report\build_q4_paper.py
+```
+
+模型从 13 项诊断证据识别数据缺口，在 7 类候选数据包中枚举满足 7 项核心能力的最小组合。核心结果为唯一 5 包组合，11 项单元测试和 27 项独立检查全部通过。

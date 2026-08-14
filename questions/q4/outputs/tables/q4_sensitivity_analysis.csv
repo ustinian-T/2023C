@@ -1,0 +1,8 @@
+﻿package_id,data_name,included_scenario_count,scenario_count,inclusion_rate,included_scenarios,selected_in_base,priority_tier,tier_reason
+inventory_stockout,库存与缺货,7,7,1.0,base_core|forecast_strict|market_strict|assortment_light|cost_light|loss_light|identification_only,True,一级：所有情景必选,在全部结构情景的最小解中均出现，结论不依赖情景取舍。
+batch_loss_quality,批次损耗与品质,5,7,0.7142857142857143,base_core|forecast_strict|market_strict|assortment_light|cost_light,True,二级：核心情景必选,完整核心链路必需，但在明确暂缓相应用途时可阶段性后置。
+supplier_quote_fulfillment,供应商报价与履约,5,7,0.7142857142857143,base_core|forecast_strict|market_strict|assortment_light|loss_light,True,二级：核心情景必选,完整核心链路必需，但在明确暂缓相应用途时可阶段性后置。
+promotion_display_traffic,促销陈列与客流,7,7,1.0,base_core|forecast_strict|market_strict|assortment_light|cost_light|loss_light|identification_only,True,一级：所有情景必选,在全部结构情景的最小解中均出现，结论不依赖情景取舍。
+anonymous_basket,匿名购物篮,6,7,0.8571428571428571,base_core|forecast_strict|market_strict|cost_light|loss_light|identification_only,True,二级：核心情景必选,完整核心链路必需，但在明确暂缓相应用途时可阶段性后置。
+weather_calendar,天气与日历,1,7,0.14285714285714285,forecast_strict,False,三级：扩展情景采用,不影响核心缺口闭环，仅在强化外部或市场背景时增加。
+competitor_price,竞争价格,1,7,0.14285714285714285,market_strict,False,三级：扩展情景采用,不影响核心缺口闭环，仅在强化外部或市场背景时增加。

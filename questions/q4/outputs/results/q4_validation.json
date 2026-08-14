@@ -1,0 +1,144 @@
+{
+  "model": "Q1-Q3 evidence audit + logical capability coverage + minimum-cardinality portfolio + structural scenario sensitivity",
+  "check_count": 27,
+  "passed_count": 27,
+  "failed_count": 0,
+  "all_checks_passed": true,
+  "checks": [
+    {
+      "name": "required_output_files_exist",
+      "passed": true,
+      "detail": "checked 6 tabular/result files"
+    },
+    {
+      "name": "source_metrics_match_q1_q2_q3",
+      "passed": true,
+      "detail": "summary evidence equals a fresh read of the verified Q1-Q3 outputs"
+    },
+    {
+      "name": "source_files_are_traceable",
+      "passed": true,
+      "detail": "every source path recorded in q4_summary.json exists"
+    },
+    {
+      "name": "gap_metrics_are_finite",
+      "passed": true,
+      "detail": "finite diagnostic values: 13/13"
+    },
+    {
+      "name": "gap_ids_are_unique",
+      "passed": true,
+      "detail": "unique gaps: 13"
+    },
+    {
+      "name": "gap_sources_are_nonempty",
+      "passed": true,
+      "detail": "each diagnostic row names its Q1-Q3 source"
+    },
+    {
+      "name": "diagnostic_count_matches_summary",
+      "passed": true,
+      "detail": "csv=13, summary=13"
+    },
+    {
+      "name": "catalog_has_seven_packages",
+      "passed": true,
+      "detail": "rows=7, unique=7"
+    },
+    {
+      "name": "catalog_fields_are_actionable",
+      "passed": true,
+      "detail": "each package contains multiple explicit fields and a collection granularity"
+    },
+    {
+      "name": "catalog_privacy_boundaries_are_explicit",
+      "passed": true,
+      "detail": "each package has a nonempty privacy or confidentiality boundary"
+    },
+    {
+      "name": "coverage_matrix_is_binary",
+      "passed": true,
+      "detail": "unique values=[np.int64(0), np.int64(1)]"
+    },
+    {
+      "name": "coverage_matrix_dimensions_match_catalog",
+      "passed": true,
+      "detail": "shape=(7, 8)"
+    },
+    {
+      "name": "base_portfolio_is_unique",
+      "passed": true,
+      "detail": "minimum solutions=1"
+    },
+    {
+      "name": "base_portfolio_has_five_packages",
+      "passed": true,
+      "detail": "package count=5"
+    },
+    {
+      "name": "base_portfolio_is_feasible",
+      "passed": true,
+      "detail": "all seven base capability requirements are met"
+    },
+    {
+      "name": "base_portfolio_is_deletion_minimal",
+      "passed": true,
+      "detail": "removing any selected package breaks at least one capability"
+    },
+    {
+      "name": "all_scenarios_have_minimum_solution",
+      "passed": true,
+      "detail": "covered scenarios=7/7"
+    },
+    {
+      "name": "all_reported_portfolios_are_feasible",
+      "passed": true,
+      "detail": "every exported portfolio satisfies its named scenario"
+    },
+    {
+      "name": "all_reported_portfolios_are_deletion_minimal",
+      "passed": true,
+      "detail": "every exported portfolio fails after any one selected package is removed"
+    },
+    {
+      "name": "sensitivity_rates_are_bounded",
+      "passed": true,
+      "detail": "all inclusion frequencies lie in [0,1]"
+    },
+    {
+      "name": "priority_tiers_match_structural_sensitivity",
+      "passed": true,
+      "detail": "tiers follow all-scenario inclusion, base inclusion, then extension-only status"
+    },
+    {
+      "name": "no_invented_information_value_parameters",
+      "passed": true,
+      "detail": "Q4 reports no assumed r_j, EVSI, cost, or benefit coefficient"
+    },
+    {
+      "name": "q2_error_relationship_is_normal",
+      "passed": true,
+      "detail": "demand WAPE exceeds positive cost WAPE, consistent with Q2 diagnostics"
+    },
+    {
+      "name": "q2_rates_are_in_probability_range",
+      "passed": true,
+      "detail": "all Q2 rate metrics lie in [0,1]"
+    },
+    {
+      "name": "q3_base_lies_inside_sensitivity_ranges",
+      "passed": true,
+      "detail": "Q3 main service and profit are contained in exported one-factor ranges"
+    },
+    {
+      "name": "q3_tail_profit_is_conservative",
+      "passed": true,
+      "detail": "lower-tail profit remains below expected-profit outcomes"
+    },
+    {
+      "name": "all_figures_nonempty",
+      "passed": true,
+      "detail": "nonempty figures=6/6"
+    }
+  ]
+}

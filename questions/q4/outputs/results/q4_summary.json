@@ -1,0 +1,94 @@
+{
+  "model": "Q1-Q3 evidence audit + logical capability coverage + minimum-cardinality portfolio + structural scenario sensitivity",
+  "principle": "No ex-ante value is assigned before new data exist; future value is measured by same-window incremental backtesting.",
+  "invented_value_parameter_count": 0,
+  "diagnostic_metric_count": 13,
+  "candidate_data_package_count": 7,
+  "base_capability_count": 7,
+  "sensitivity_scenario_count": 7,
+  "base_portfolio": {
+    "package_count": 5,
+    "package_ids": [
+      "anonymous_basket",
+      "batch_loss_quality",
+      "inventory_stockout",
+      "promotion_display_traffic",
+      "supplier_quote_fulfillment"
+    ],
+    "package_names": [
+      "匿名购物篮",
+      "批次损耗与品质",
+      "库存与缺货",
+      "促销陈列与客流",
+      "供应商报价与履约"
+    ],
+    "is_feasible": true,
+    "is_deletion_minimal": true
+  },
+  "priority_tiers": {
+    "一级：所有情景必选": [
+      "inventory_stockout",
+      "promotion_display_traffic"
+    ],
+    "二级：核心情景必选": [
+      "batch_loss_quality",
+      "supplier_quote_fulfillment",
+      "anonymous_basket"
+    ],
+    "三级：扩展情景采用": [
+      "weather_calendar",
+      "competitor_price"
+    ]
+  },
+  "key_evidence": {
+    "q1_distribution_objects": 70,
+    "q1_parametric_accepted": 45,
+    "q1_kde_fallback": 25,
+    "q1_all_sku_pairs": 2016,
+    "q1_clear_sku_pairs": 18,
+    "q2_demand_wape": 0.358849784930296,
+    "q2_cost_wape": 0.15282047420040587,
+    "q2_80pct_coverage": 0.7435897435897436,
+    "q2_pooled_fallback_categories": 2,
+    "q2_clearly_negative_elasticity_categories": 2,
+    "q2_mean_stockout_probability": 0.6108730158730158,
+    "q2_demand_satisfaction": 0.6700609024909105,
+    "q2_goodwill_replenishment_min_kg": 1937.5845107968803,
+    "q2_goodwill_replenishment_max_kg": 2109.1230527573643,
+    "q2_goodwill_stockout_min": 0.5792857142857143,
+    "q2_goodwill_stockout_max": 0.6631349206349206,
+    "q3_candidate_sku_count": 49,
+    "q3_q1_candidate_coverage": 26,
+    "q3_clear_candidate_pairs": 9,
+    "q3_candidate_pairs_covered": 325,
+    "q3_mean_demand_satisfaction": 0.778185107091021,
+    "q3_lower10pct_profit_yuan": -423.2096107493048,
+    "q3_minimum_selection_jaccard": 0.8333333333333334,
+    "q3_service_satisfaction_min": 0.7186931600072679,
+    "q3_service_satisfaction_max": 0.8283826945945719,
+    "q3_expected_profit_min_yuan": -52.24408764899067,
+    "q3_expected_profit_max_yuan": 356.3058293683925
+  },
+  "source_files": {
+    "q1_summary": "questions/q1/outputs/results/q1_summary.json",
+    "q1_relationships": "questions/q1/outputs/tables/tab_q1_all_sku_pair_relationships.csv",
+    "q2_summary": "questions/q2/outputs/results/q2_summary.json",
+    "q2_forecast": "questions/q2/outputs/tables/q2_forecast_metrics.csv",
+    "q2_elasticity": "questions/q2/outputs/tables/q2_elasticity_estimates.csv",
+    "q2_daily": "questions/q2/outputs/tables/q2_daily_strategy.csv",
+    "q2_sensitivity": "questions/q2/outputs/tables/q2_sensitivity_analysis.csv",
+    "q3_summary": "questions/q3/outputs/results/q3_summary.json"
+  },
+  "post_collection_evaluation": {
+    "method": "rolling-origin incremental backtest with unchanged Q1-Q3 model boundaries",
+    "metrics": [
+      "demand_wape_reduction",
+      "cost_wape_reduction",
+      "coverage_calibration_improvement",
+      "realized_profit_change",
+      "demand_satisfaction_change",
+      "lower10pct_profit_change"
+    ],
+    "ranking_rule": "Pareto dominance; use net value only after actual acquisition cost is observed"
+  }
+}

@@ -1,0 +1,14 @@
+﻿gap_id,question,metric_name,metric_value,unit,interpretation,source_file
+G01,问题1,参数分布接受率,0.6428571428571429,比例,仅部分对象可由候选参数分布充分描述，非参数回退占比较高。,questions/q1/outputs/results/q1_summary.json
+G02,问题1,全单品明确关系占比,0.008928571428571428,比例,日销量共变证据稀疏，不能据此直接声称因果替代或互补。,questions/q1/outputs/tables/tab_q1_all_sku_pair_relationships.csv
+G03,问题2,需求预测加权WAPE,0.358849784930296,比例,需求预测误差显著高于成本预测误差，销售量中的缺货截断和外部冲击需要补充观测。,questions/q2/outputs/results/q2_summary.json
+G04,问题2,成本预测加权WAPE,0.15282047420040587,比例,仅凭历史批发价仍存在成本不确定性，缺少报价时点、可供量和履约信息。,questions/q2/outputs/results/q2_summary.json
+G05,问题2,80%需求区间实际覆盖率,0.7435897435897436,比例,实际覆盖低于名义80%，表明部分需求冲击未被现有信息集解释。,questions/q2/outputs/tables/q2_forecast_metrics.csv
+G06,问题2,价格响应明确为负的品类占比,0.3333333333333333,比例,只有两个品类的置信区间完全小于零，促销、陈列和库存混杂尚未分离。,questions/q2/outputs/tables/q2_elasticity_estimates.csv
+G07,问题2,主策略平均缺货概率,0.6108730158730158,比例,模拟缺货概率较高，但缺少真实缺货时点，无法用实际运营数据校准。,questions/q2/outputs/results/q2_summary.json
+G08,问题2,主策略期望需求满足率,0.6700609024909105,比例,满足率由模拟需求计算，现有流水无法直接检验未成交需求。,questions/q2/outputs/tables/q2_daily_strategy.csv
+G09,问题2,商誉系数灵敏度下补货极差,171.53854196048405,kg/周,管理参数变化会明显改变补货量，需将实际缺货损失与管理偏好分开报告。,questions/q2/outputs/tables/q2_sensitivity_analysis.csv
+G10,问题3,候选单品第一问覆盖率,0.5306122448979592,比例,接近一半候选单品缺少稳定的长期关系画像，关联结果只能用于诊断。,questions/q3/outputs/results/q3_summary.json
+G11,问题3,历史份额扰动下满足率极差,0.10968953458730402,比例,单品份额是第三问最敏感输入，需要可售集合和缺货替代数据。,questions/q3/outputs/results/q3_summary.json
+G12,问题3,历史份额扰动下期望利润极差,408.54991701738317,元/日,份额设定改变会导致利润跨越正负区间，表明继续改进求解器不能替代新增行为数据。,questions/q3/outputs/results/q3_summary.json
+G13,问题3,最差10%平均利润,-423.2096107493048,元/日,尾部仍为亏损，供应、损耗和真实需求联合数据是校准风险场景的关键。,questions/q3/outputs/results/q3_summary.json
