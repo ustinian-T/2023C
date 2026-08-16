@@ -814,15 +814,6 @@ $u_{ct}$ 和 $v_{ct}$ 为随机误差项。
 \label{fig:q2_improvement}
 \end{figure}
 
-
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\textwidth]{figures/fig_q2_risk_return_tradeoff.png}
-\caption{不同风险权重下的期望—下尾权衡}
-\label{fig:q2_tradeoff}
-\end{figure}
-
 \begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X>{\centering\arraybackslash}X}
@@ -837,8 +828,19 @@ $u_{ct}$ 和 $v_{ct}$ 为随机误差项。
 \caption{风险权重敏感性}
 \label{tab:q2_risk}
 \end{table}
+
 \hspace*{2em}
 由图 \ref{fig:q2_improvement}：\textbf{主方案四项指标均优于历史基线}，周经营利润期望由约 2671 元提高至 4850 元，最差 10\% 经营利润由负转正，均值—CVaR 双目标在提升收益的同时改善了尾部安全。由表 \ref{tab:q2_risk}：$\gamma$ 从 0 增至 0.50 时，正则化下尾利润由 205 元提升至 414 元，而期望利润仅由 4185 元降至 4098 元，边际代价递减；\textbf{主方案 $\gamma=0.25$ 位于拐点附近}，以较小期望损失换取明显尾部改善。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig_q2_risk_return_tradeoff.png}
+\caption{不同风险权重下的期望—下尾权衡}
+\label{fig:q2_tradeoff}
+\end{figure}
+
+
+
 
 \item \textbf{关键参数敏感性分析验证}
 
